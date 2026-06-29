@@ -1,54 +1,102 @@
-import {useState} from 'react';
-import axios from 'axios';
-import {useNavigate} from "react-router";
+import { useState } from 'react';
+import { Alert, Button, Card, ConfigProvider, Input, Typography } from 'antd';
+import { Link, useNavigate } from 'react-router';
+import { login } from '../api/auth';
+import './LoginPage.css';
 
 function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const navigate = useNavigate();
 
     const handleLogin = async () => {
+        if (!email || !password) {
+            setError('Введите логин и пароль.');
+            return;
+        }
+
         try {
-            if (!email || !password) {
-                setError('Please enter both email and password.');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('email', email);
-            formData.append('password', password);
-
-            await axios.post('http://localhost:8080/auth/login', formData
-            );
-
+            setIsSubmitting(true);
+            setError('');
+            await login({ email, password });
             navigate('/tasks');
-        } catch (error) {
-            setError('Invalid email or password.');
+        } catch {
+            setError('Неверный логин или пароль.');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     return (
-        <div>
-            <h1>Login Page</h1>
+        <ConfigProvider
+            theme={{
+                token: {
+                    colorPrimary: '#b55a1f',
+                    borderRadius: 14,
+                    fontFamily: '"Plus Jakarta Sans", "Segoe UI", sans-serif',
+                },
+            }}
+        >
+            <div className="login-page">
+                <div className="login-page__card-wrap">
+                    <Card className="login-page__card" variant="borderless">
+                        <Typography.Title level={2} className="login-page__card-title">
+                            Вход
+                        </Typography.Title>
+                        <Typography.Text className="login-page__card-copy">
+                            Войдите, чтобы продолжить.
+                        </Typography.Text>
 
-            <input
-                placeholder='Email address' id='email' value={email} type='email'
-                onChange={(event) => setEmail(event.target.value)} />
+                        <div className="login-page__form">
+                            <label className="login-page__label" htmlFor="email">
+                                Логин
+                            </label>
+                            <Input
+                                id="email"
+                                size="large"
+                                value={email}
+                                placeholder="Введите логин"
+                                onChange={(event) => setEmail(event.target.value)}
+                                onPressEnter={handleLogin}
+                            />
 
-            <input
-                placeholder='Password' id='password' type='password' value={password}
-                onChange={(event) => setPassword(event.target.value)} />
+                            <label className="login-page__label" htmlFor="password">
+                                Пароль
+                            </label>
+                            <Input.Password
+                                id="password"
+                                size="large"
+                                value={password}
+                                placeholder="Введите пароль"
+                                onChange={(event) => setPassword(event.target.value)}
+                                onPressEnter={handleLogin}
+                            />
 
-            {error && <p>{error}</p>} {/* Render error message if exists */}
+                            {error ? <Alert title={error} type="error" showIcon /> : null}
 
-            <button style={{ height:'50px',width: '100%' }}
-                    type="button"
-                    onClick={handleLogin}>Sign in</button>
-            <div>
-                <p>Not a member? <a href="/signup">Register</a></p>
+                            <Button
+                                block
+                                type="primary"
+                                loading={isSubmitting}
+                                className="login-page__submit"
+                                onClick={handleLogin}
+                            >
+                                Войти
+                            </Button>
+                        </div>
+
+                        <Typography.Paragraph className="login-page__footer">
+                            Нет аккаунта?{' '}
+                            <Link to="/signup" className="login-page__footer-link">
+                                Зарегистрироваться
+                            </Link>
+                        </Typography.Paragraph>
+                    </Card>
+                </div>
             </div>
-        </div>
+        </ConfigProvider>
     );
 }
 
