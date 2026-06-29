@@ -1,4 +1,5 @@
 import {BrowserRouter, Navigate, Route, Routes} from "react-router";
+import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import LoginPage from "./pages/LoginPage.tsx";
 
 function App() {
@@ -7,7 +8,9 @@ function App() {
           <Routes>
               <Route path={"/"} element={<Navigate to={"/login"} replace={true} />} />
               <Route path={"/login"} element={<LoginPage />} />
-              <Route path={"/tasks"} element={<div>Tasks Page</div>} />
+              <Route element={<ProtectedRoute />}>
+                  <Route path={"/tasks"} element={<div>Tasks Page</div>} />
+              </Route>
           </Routes>
     </BrowserRouter>
   );

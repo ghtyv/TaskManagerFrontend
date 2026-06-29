@@ -12,3 +12,7 @@ export async function login({ email, password }: LoginPayload) {
 
     return apiClient.post('/auth/login', formData);
 }
+
+export async function getCurrentUser() {
+    return apiClient.get('/auth/me');
+}
