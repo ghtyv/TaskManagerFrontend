@@ -1,5 +1,4 @@
 import {BrowserRouter, Navigate, Route, Routes} from "react-router";
-import './App.css'
 import LoginPage from "./pages/LoginPage.tsx";
 
 function App() {

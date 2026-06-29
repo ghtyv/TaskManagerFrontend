@@ -15,15 +15,12 @@ function LoginPage() {
                 return;
             }
 
-            const formData = new URLSearchParams();
+            const formData = new FormData();
             formData.append('email', email);
             formData.append('password', password);
 
-            await axios.post('http://localhost:8080/auth/login', formData, {headers: {
-                'Content-type': 'application/x-www-form-urlencoded'
-                },
-                withCredentials: true,
-            });
+            await axios.post('http://localhost:8080/auth/login', formData
+            );
 
             navigate('/tasks');
         } catch (error) {
