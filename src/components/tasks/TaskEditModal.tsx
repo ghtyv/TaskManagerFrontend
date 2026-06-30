@@ -1,6 +1,6 @@
-import { Button, Form, Input, Modal, Select, Switch, Typography, type FormInstance } from 'antd';
+import { Button, Form, Input, Modal, Switch, Typography, type FormInstance } from 'antd';
 import type { UserListItem } from '../../api/users';
-import { filterUsersByEmail } from './taskPresentation';
+import AssigneeSelect from './AssigneeSelect';
 
 const { TextArea } = Input;
 
@@ -63,17 +63,14 @@ function TaskEditModal({
                 </Form.Item>
 
                 <Form.Item name="assigneeId" label="Исполнитель">
-                    <Select
+                    <AssigneeSelect
                         allowClear
-                        showSearch
-                        filterOption={filterUsersByEmail}
-                        loading={isUsersLoading}
                         className="task-create__assignee-input"
+                        isLoading={isUsersLoading}
+                        onChange={(value) => form.setFieldValue('assigneeId', value)}
                         placeholder="Выберите пользователя"
-                        options={users.map((user) => ({
-                            value: user.id,
-                            label: user.email,
-                        }))}
+                        users={users}
+                        value={form.getFieldValue('assigneeId')}
                     />
                 </Form.Item>
 

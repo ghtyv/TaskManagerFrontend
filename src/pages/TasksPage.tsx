@@ -1,98 +1,52 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Empty, Flex, Form, Input, Layout, List, Segmented, Select, Space, Spin, Typography } from 'antd';
+import { useState } from 'react';
+import { Button, Card, Empty, Flex, Form, Input, Layout, List, Segmented, Space, Spin, Typography } from 'antd';
 import { useNavigate } from 'react-router';
 import { logout } from '../api/auth';
-import { createTask, getTasks, type Task } from '../api/tasks';
-import { getUsers, type UserListItem } from '../api/users';
+import { createTask } from '../api/tasks';
+import AssigneeSelect from '../components/tasks/AssigneeSelect';
 import TaskCreateModal, { type TaskCreateFormValues } from '../components/tasks/TaskCreateModal';
 import TaskListCard from '../components/tasks/TaskListCard';
 import {
     getAssigneeLabel,
     TASK_STATUS_FILTER_OPTIONS,
-    type TaskStatusFilter,
 } from '../components/tasks/taskPresentation';
+import useTaskFilters from '../hooks/useTaskFilters';
+import useTasksPageData from '../hooks/useTasksPageData';
 import './TasksPage.css';
 
 const { Content, Header } = Layout;
 const { Search } = Input;
 
 function TasksPage() {
-    const [tasks, setTasks] = useState<Task[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
-    const [users, setUsers] = useState<UserListItem[]>([]);
-    const [isUsersLoading, setIsUsersLoading] = useState(true);
-    const [error, setError] = useState('');
     const [createError, setCreateError] = useState('');
-    const [usersError, setUsersError] = useState('');
-    const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('open');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
     const navigate = useNavigate();
     const [form] = Form.useForm<TaskCreateFormValues>();
-
-    const loadTasks = async () => {
-        try {
-            setIsLoading(true);
-            setError('');
-            const nextTasks = await getTasks();
-            setTasks(nextTasks);
-        } catch {
-            setError('Не удалось загрузить задачи.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        let isActive = true;
-
-        Promise.allSettled([getTasks(), getUsers()])
-            .then(([tasksResult, usersResult]) => {
-                if (!isActive) {
-                    return;
-                }
-
-                if (tasksResult.status === 'fulfilled') {
-                    setTasks(tasksResult.value);
-                    setError('');
-                } else {
-                    setError('Не удалось загрузить задачи.');
-                }
-
-                if (usersResult.status === 'fulfilled') {
-                    setUsers(usersResult.value);
-                    setUsersError('');
-                } else {
-                    setUsersError('Не удалось загрузить список пользователей.');
-                }
-            })
-            .finally(() => {
-                if (isActive) {
-                    setIsLoading(false);
-                    setIsUsersLoading(false);
-                }
-            });
-
-        return () => {
-            isActive = false;
-        };
-    }, []);
-
-    const loadUsers = async () => {
-        try {
-            setIsUsersLoading(true);
-            setUsersError('');
-            const nextUsers = await getUsers();
-            setUsers(nextUsers);
-        } catch {
-            setUsersError('Не удалось загрузить список пользователей.');
-        } finally {
-            setIsUsersLoading(false);
-        }
-    };
+    const {
+        error,
+        isLoading,
+        isUsersLoading,
+        loadUsers,
+        prependTask,
+        refreshAll,
+        tasks,
+        users,
+        usersError,
+    } = useTasksPageData();
+    const {
+        assigneeFilter,
+        assigneeFilterOptions,
+        searchQuery,
+        setAssigneeFilter,
+        setSearchQuery,
+        setStatusFilter,
+        statusFilter,
+        summary,
+        usersById,
+        visibleTasks,
+    } = useTaskFilters(tasks, users);
 
     const openTask = (taskId: number) => {
         navigate(`/tasks/${taskId}`);
@@ -106,71 +60,6 @@ function TasksPage() {
             navigate('/login', { replace: true });
         }
     };
-
-    const summary = useMemo(() => {
-        const openTasks = tasks.filter((task) => task.open).length;
-        const closedTasks = tasks.length - openTasks;
-
-        if (statusFilter === 'open') {
-            return `${openTasks} открытых задач`;
-        }
-
-        if (statusFilter === 'closed') {
-            return `${closedTasks} закрытых задач`;
-        }
-
-        return `${tasks.length} задач • ${openTasks} открыто • ${closedTasks} закрыто`;
-    }, [statusFilter, tasks]);
-
-    const usersById = useMemo(
-        () => new Map(users.map((user) => [user.id, user.email])),
-        [users],
-    );
-
-    const assigneeFilterOptions = useMemo(
-        () => [
-            { value: 'all', label: 'Все исполнители' },
-            { value: 'unassigned', label: 'Без исполнителя' },
-            ...users.map((user) => ({
-                value: String(user.id),
-                label: user.email,
-            })),
-        ],
-        [users],
-    );
-
-    const visibleTasks = useMemo(() => {
-        const normalizedQuery = searchQuery.trim().toLowerCase();
-
-        return tasks.filter((task) => {
-            const matchesStatus =
-                statusFilter === 'all' ||
-                (statusFilter === 'open' && task.open) ||
-                (statusFilter === 'closed' && !task.open);
-
-            if (!matchesStatus) {
-                return false;
-            }
-
-            const matchesAssignee =
-                assigneeFilter === 'all' ||
-                (assigneeFilter === 'unassigned' && task.assigneeId === null) ||
-                String(task.assigneeId) === assigneeFilter;
-
-            if (!matchesAssignee) {
-                return false;
-            }
-
-            if (!normalizedQuery) {
-                return true;
-            }
-
-            const assigneeLabel = getAssigneeLabel(task.assigneeId, usersById);
-            const haystack = [task.title, task.description ?? '', assigneeLabel].join(' ').toLowerCase();
-
-            return haystack.includes(normalizedQuery);
-        });
-    }, [assigneeFilter, searchQuery, statusFilter, tasks, usersById]);
 
     const openCreateModal = () => {
         setCreateError('');
@@ -203,7 +92,7 @@ function TasksPage() {
                 assigneeId: values.assigneeId ?? null,
             });
 
-            setTasks((currentTasks) => [createdTask, ...currentTasks]);
+            prependTask(createdTask);
             setIsCreateOpen(false);
             form.resetFields();
         } catch (createTaskError: unknown) {
@@ -231,7 +120,7 @@ function TasksPage() {
                     <Button type="primary" onClick={openCreateModal}>
                         Создать задачу
                     </Button>
-                    <Button onClick={() => void loadTasks()} disabled={isLoading}>
+                    <Button onClick={() => void refreshAll()} disabled={isLoading}>
                         Обновить
                     </Button>
                     <Button
@@ -248,18 +137,20 @@ function TasksPage() {
             <Content className="tasks-content">
                 <Flex gap={16} justify="space-between" wrap className="tasks-toolbar">
                     <Flex gap={16} wrap className="tasks-toolbar__filters">
-                        <Segmented<TaskStatusFilter>
+                        <Segmented
                             value={statusFilter}
                             onChange={setStatusFilter}
                             options={TASK_STATUS_FILTER_OPTIONS}
                         />
 
-                        <Select
-                            value={assigneeFilter}
-                            onChange={setAssigneeFilter}
-                            options={assigneeFilterOptions}
+                        <AssigneeSelect
                             className="tasks-toolbar__assignee"
+                            extraOptions={assigneeFilterOptions}
+                            isLoading={isUsersLoading}
+                            onChange={setAssigneeFilter}
                             placeholder="Исполнитель"
+                            users={users}
+                            value={assigneeFilter}
                         />
                     </Flex>
 
@@ -281,7 +172,7 @@ function TasksPage() {
                         <Card className="tasks-state__panel">
                             <Space direction="vertical" size={16}>
                                 <Typography.Text>{error}</Typography.Text>
-                                <Button type="primary" onClick={() => void loadTasks()}>
+                                <Button type="primary" onClick={() => void refreshAll()}>
                                     Повторить
                                 </Button>
                             </Space>
