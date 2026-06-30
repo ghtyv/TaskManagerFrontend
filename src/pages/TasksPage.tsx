@@ -1,25 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Empty, Form, Input, Layout, List, Modal, Select, Space, Spin, Tag, Typography } from 'antd';
+import { Button, Card, Empty, Flex, Form, Input, Layout, List, Segmented, Select, Space, Spin, Typography } from 'antd';
 import { useNavigate } from 'react-router';
 import { logout } from '../api/auth';
 import { createTask, getTasks, type Task } from '../api/tasks';
 import { getUsers, type UserListItem } from '../api/users';
+import TaskCreateModal, { type TaskCreateFormValues } from '../components/tasks/TaskCreateModal';
+import TaskListCard from '../components/tasks/TaskListCard';
+import {
+    getAssigneeLabel,
+    TASK_STATUS_FILTER_OPTIONS,
+    type TaskStatusFilter,
+} from '../components/tasks/taskPresentation';
 import './TasksPage.css';
 
 const { Content, Header } = Layout;
-const { TextArea } = Input;
-
-function getTaskState(open: boolean) {
-    return open ? 'Открыта' : 'Закрыта';
-}
-
-function getAssigneeLabel(assigneeId: number | null, usersById: Map<number, string>) {
-    if (assigneeId === null) {
-        return 'не назначен';
-    }
-
-    return usersById.get(assigneeId) ?? 'неизвестный пользователь';
-}
+const { Search } = Input;
 
 function TasksPage() {
     const [tasks, setTasks] = useState<Task[]>([]);
@@ -32,12 +27,11 @@ function TasksPage() {
     const [error, setError] = useState('');
     const [createError, setCreateError] = useState('');
     const [usersError, setUsersError] = useState('');
+    const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('open');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
     const navigate = useNavigate();
-    const [form] = Form.useForm<{
-        title: string;
-        description?: string;
-        assigneeId?: number | null;
-    }>();
+    const [form] = Form.useForm<TaskCreateFormValues>();
 
     const loadTasks = async () => {
         try {
@@ -115,13 +109,68 @@ function TasksPage() {
 
     const summary = useMemo(() => {
         const openTasks = tasks.filter((task) => task.open).length;
-        return `${tasks.length} задач • ${openTasks} открыто`;
-    }, [tasks]);
+        const closedTasks = tasks.length - openTasks;
+
+        if (statusFilter === 'open') {
+            return `${openTasks} открытых задач`;
+        }
+
+        if (statusFilter === 'closed') {
+            return `${closedTasks} закрытых задач`;
+        }
+
+        return `${tasks.length} задач • ${openTasks} открыто • ${closedTasks} закрыто`;
+    }, [statusFilter, tasks]);
 
     const usersById = useMemo(
         () => new Map(users.map((user) => [user.id, user.email])),
         [users],
     );
+
+    const assigneeFilterOptions = useMemo(
+        () => [
+            { value: 'all', label: 'Все исполнители' },
+            { value: 'unassigned', label: 'Без исполнителя' },
+            ...users.map((user) => ({
+                value: String(user.id),
+                label: user.email,
+            })),
+        ],
+        [users],
+    );
+
+    const visibleTasks = useMemo(() => {
+        const normalizedQuery = searchQuery.trim().toLowerCase();
+
+        return tasks.filter((task) => {
+            const matchesStatus =
+                statusFilter === 'all' ||
+                (statusFilter === 'open' && task.open) ||
+                (statusFilter === 'closed' && !task.open);
+
+            if (!matchesStatus) {
+                return false;
+            }
+
+            const matchesAssignee =
+                assigneeFilter === 'all' ||
+                (assigneeFilter === 'unassigned' && task.assigneeId === null) ||
+                String(task.assigneeId) === assigneeFilter;
+
+            if (!matchesAssignee) {
+                return false;
+            }
+
+            if (!normalizedQuery) {
+                return true;
+            }
+
+            const assigneeLabel = getAssigneeLabel(task.assigneeId, usersById);
+            const haystack = [task.title, task.description ?? '', assigneeLabel].join(' ').toLowerCase();
+
+            return haystack.includes(normalizedQuery);
+        });
+    }, [assigneeFilter, searchQuery, statusFilter, tasks, usersById]);
 
     const openCreateModal = () => {
         setCreateError('');
@@ -197,6 +246,32 @@ function TasksPage() {
             </Header>
 
             <Content className="tasks-content">
+                <Flex gap={16} justify="space-between" wrap className="tasks-toolbar">
+                    <Flex gap={16} wrap className="tasks-toolbar__filters">
+                        <Segmented<TaskStatusFilter>
+                            value={statusFilter}
+                            onChange={setStatusFilter}
+                            options={TASK_STATUS_FILTER_OPTIONS}
+                        />
+
+                        <Select
+                            value={assigneeFilter}
+                            onChange={setAssigneeFilter}
+                            options={assigneeFilterOptions}
+                            className="tasks-toolbar__assignee"
+                            placeholder="Исполнитель"
+                        />
+                    </Flex>
+
+                    <Search
+                        allowClear
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        placeholder="Поиск"
+                        className="tasks-toolbar__search"
+                    />
+                </Flex>
+
                 {isLoading ? (
                     <div className="tasks-state">
                         <Spin size="large" />
@@ -216,107 +291,38 @@ function TasksPage() {
                     <div className="tasks-state">
                         <Empty description="Задач пока нет." />
                     </div>
+                ) : visibleTasks.length === 0 ? (
+                    <div className="tasks-state">
+                        <Empty description="По вашему запросу задачи не найдены." />
+                    </div>
                 ) : (
                     <List
                         grid={{ gutter: 20, xs: 1, lg: 2 }}
-                        dataSource={tasks}
+                        dataSource={visibleTasks}
                         renderItem={(task) => (
                             <List.Item>
-                                <Card
-                                    hoverable
-                                    className="task-card"
-                                    onClick={() => openTask(task.id)}
-                                    actions={[
-                                        <Button
-                                            key="open"
-                                            type="link"
-                                            onClick={(event) => {
-                                                event.stopPropagation();
-                                                openTask(task.id);
-                                            }}
-                                        >
-                                            Открыть
-                                        </Button>,
-                                    ]}
-                                >
-                                    <Space direction="vertical" size={14} className="task-card__content">
-                                        <Space align="start" className="task-card__heading">
-                                            <Typography.Title level={4} className="task-card__title">
-                                                {task.title}
-                                            </Typography.Title>
-                                            <Tag color={task.open ? 'green' : 'default'}>{getTaskState(task.open)}</Tag>
-                                        </Space>
-                                        <Typography.Paragraph className="task-card__description" ellipsis={{ rows: 3 }}>
-                                            {task.description || 'Описание не указано.'}
-                                        </Typography.Paragraph>
-                                        <Typography.Text className="task-card__meta">
-                                            Исполнитель: {getAssigneeLabel(task.assigneeId, usersById)}
-                                        </Typography.Text>
-                                    </Space>
-                                </Card>
+                                <TaskListCard
+                                    task={task}
+                                    assigneeLabel={getAssigneeLabel(task.assigneeId, usersById)}
+                                    onOpen={openTask}
+                                />
                             </List.Item>
                         )}
                     />
                 )}
             </Content>
 
-            <Modal
-                title="Создать задачу"
+            <TaskCreateModal
+                createError={createError}
+                form={form}
+                isCreating={isCreating}
+                isUsersLoading={isUsersLoading}
                 open={isCreateOpen}
-                okText="Создать"
-                cancelText="Отмена"
-                confirmLoading={isCreating}
-                onOk={() => void handleCreateTask()}
+                users={users}
+                usersError={usersError}
                 onCancel={closeCreateModal}
-                destroyOnHidden
-            >
-                <Form form={form} layout="vertical">
-                    <Form.Item
-                        name="title"
-                        label="Название"
-                        rules={[
-                            { required: true, whitespace: true, message: 'Введите название задачи.' },
-                        ]}
-                    >
-                        <Input maxLength={255} placeholder="Например, Подготовить отчет" />
-                    </Form.Item>
-
-                    <Form.Item name="description" label="Описание">
-                        <TextArea rows={4} placeholder="Опишите задачу" />
-                    </Form.Item>
-
-                    <Form.Item name="assigneeId" label="Исполнитель">
-                        <Select
-                            allowClear
-                            showSearch
-                            loading={isUsersLoading}
-                            className="task-create__assignee-input"
-                            placeholder="Выберите пользователя"
-                            optionFilterProp="label"
-                            options={users.map((user) => ({
-                                value: user.id,
-                                label: user.email,
-                            }))}
-                        />
-                    </Form.Item>
-
-                    {usersError ? (
-                        <Typography.Text type="warning" className="task-create__hint">
-                            {usersError}
-                        </Typography.Text>
-                    ) : (
-                        <Typography.Text className="task-create__hint">
-                            Если исполнитель не выбран, задача будет создана без назначения.
-                        </Typography.Text>
-                    )}
-
-                    {createError ? (
-                        <Typography.Text type="danger" className="task-create__error">
-                            {createError}
-                        </Typography.Text>
-                    ) : null}
-                </Form>
-            </Modal>
+                onSubmit={() => void handleCreateTask()}
+            />
         </Layout>
     );
 }

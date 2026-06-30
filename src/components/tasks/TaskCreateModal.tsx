@@ -1,48 +1,45 @@
-import { Button, Form, Input, Modal, Select, Switch, Typography, type FormInstance } from 'antd';
+import { Form, Input, Modal, Select, Typography, type FormInstance } from 'antd';
 import type { UserListItem } from '../../api/users';
 import { filterUsersByEmail } from './taskPresentation';
 
 const { TextArea } = Input;
 
-export type TaskEditFormValues = {
+export type TaskCreateFormValues = {
     title: string;
     description?: string;
-    open: boolean;
     assigneeId?: number | null;
 };
 
-type TaskEditModalProps = {
-    form: FormInstance<TaskEditFormValues>;
+type TaskCreateModalProps = {
+    createError: string;
+    form: FormInstance<TaskCreateFormValues>;
+    isCreating: boolean;
     isUsersLoading: boolean;
-    isUpdating: boolean;
     open: boolean;
-    updateError: string;
     users: UserListItem[];
     usersError: string;
     onCancel: () => void;
-    onRetryUsers: () => void;
     onSubmit: () => void;
 };
 
-function TaskEditModal({
+function TaskCreateModal({
+    createError,
     form,
+    isCreating,
     isUsersLoading,
-    isUpdating,
     open,
-    updateError,
     users,
     usersError,
     onCancel,
-    onRetryUsers,
     onSubmit,
-}: TaskEditModalProps) {
+}: TaskCreateModalProps) {
     return (
         <Modal
-            title="Изменить задачу"
+            title="Создать задачу"
             open={open}
-            okText="Сохранить"
+            okText="Создать"
             cancelText="Отмена"
-            confirmLoading={isUpdating}
+            confirmLoading={isCreating}
             onOk={onSubmit}
             onCancel={onCancel}
             destroyOnHidden
@@ -55,7 +52,7 @@ function TaskEditModal({
                         { required: true, whitespace: true, message: 'Введите название задачи.' },
                     ]}
                 >
-                    <Input maxLength={255} />
+                    <Input maxLength={255} placeholder="Название" />
                 </Form.Item>
 
                 <Form.Item name="description" label="Описание">
@@ -77,24 +74,19 @@ function TaskEditModal({
                     />
                 </Form.Item>
 
-                <Form.Item name="open" label="Статус задачи" valuePropName="checked">
-                    <Switch />
-                </Form.Item>
-
                 {usersError ? (
-                    <div className="task-edit-modal__users-error">
-                        <Typography.Text type="warning" className="task-create__hint">
-                            {usersError}
-                        </Typography.Text>
-                        <Button type="link" onClick={onRetryUsers}>
-                            Повторить загрузку пользователей
-                        </Button>
-                    </div>
-                ) : null}
+                    <Typography.Text type="warning" className="task-create__hint">
+                        {usersError}
+                    </Typography.Text>
+                ) : (
+                    <Typography.Text className="task-create__hint">
+                        Если исполнитель не выбран, задача будет создана без назначения.
+                    </Typography.Text>
+                )}
 
-                {updateError ? (
+                {createError ? (
                     <Typography.Text type="danger" className="task-create__error">
-                        {updateError}
+                        {createError}
                     </Typography.Text>
                 ) : null}
             </Form>
@@ -102,4 +94,4 @@ function TaskEditModal({
     );
 }
 
-export default TaskEditModal;
+export default TaskCreateModal;

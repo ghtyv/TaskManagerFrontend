@@ -1,4 +1,4 @@
-import { Descriptions, Typography } from 'antd';
+import { Descriptions, Space, Typography } from 'antd';
 
 type TaskMetaProps = {
     assigneeLabel: string;
@@ -8,7 +8,7 @@ type TaskMetaProps = {
 
 function TaskMeta({ assigneeLabel, id, stateLabel }: TaskMetaProps) {
     return (
-        <div className="task-details__meta">
+        <Space direction="vertical" size={10} className="task-details__meta">
             <Typography.Text className="task-details__section-label">
                 Сведения о задаче
             </Typography.Text>
@@ -17,7 +17,7 @@ function TaskMeta({ assigneeLabel, id, stateLabel }: TaskMetaProps) {
                 <Descriptions.Item label="Статус">{stateLabel}</Descriptions.Item>
                 <Descriptions.Item label="Исполнитель">{assigneeLabel}</Descriptions.Item>
             </Descriptions>
-        </div>
+        </Space>
     );
 }
 

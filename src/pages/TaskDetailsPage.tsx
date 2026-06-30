@@ -1,33 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Form, Layout, Space, Spin, Tag, Typography } from 'antd';
+import { Button, Card, Flex, Form, Layout, Space, Spin, Tag, Typography } from 'antd';
 import { useNavigate, useParams } from 'react-router';
 import { getTaskById, updateTask, type Task } from '../api/tasks';
 import { getUsers, type UserListItem } from '../api/users';
 import TaskEditModal, { type TaskEditFormValues } from '../components/tasks/TaskEditModal';
 import TaskMeta from '../components/tasks/TaskMeta';
+import { getAssigneeLabel, getTaskState } from '../components/tasks/taskPresentation';
 import './TasksPage.css';
 
 const { Content } = Layout;
-
-function getTaskState(open: boolean) {
-    return open ? 'Открыта' : 'Закрыта';
-}
-
-function getAssigneeLabel(
-    assigneeId: number | null,
-    usersById: Map<number, string>,
-    isUsersLoading: boolean,
-) {
-    if (assigneeId === null) {
-        return 'не назначен';
-    }
-
-    if (isUsersLoading) {
-        return 'загрузка...';
-    }
-
-    return usersById.get(assigneeId) ?? 'неизвестный пользователь';
-}
 
 function TaskDetailsPage() {
     const { id } = useParams();
@@ -215,18 +196,18 @@ function TaskDetailsPage() {
                     ) : task ? (
                         <Card className="task-details__card">
                             <Space direction="vertical" size={20} className="task-details__content">
-                                <div className="task-details__header">
-                                    <div className="task-details__header-main">
+                                <Flex justify="space-between" gap={16} wrap className="task-details__header">
+                                    <Flex align="center" gap={12} wrap className="task-details__header-main">
                                         <Typography.Title level={2} className="task-details__title">
                                             {task.title}
                                         </Typography.Title>
                                         <Tag color={task.open ? 'green' : 'default'}>{getTaskState(task.open)}</Tag>
-                                    </div>
+                                    </Flex>
 
                                     <Button type="primary" onClick={openEditModal}>
                                         Изменить
                                     </Button>
-                                </div>
+                                </Flex>
 
                                 <div className="task-details__section">
                                     <Typography.Text className="task-details__section-label">
