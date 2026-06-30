@@ -16,3 +16,7 @@ export async function login({ email, password }: LoginPayload) {
 export async function getCurrentUser() {
     return apiClient.get('/auth/me');
 }
+
+export async function logout() {
+    return apiClient.delete('/auth/logout');
+}
