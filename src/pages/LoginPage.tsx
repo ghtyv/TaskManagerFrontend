@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Alert, Button, Card, Input, Typography } from 'antd';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { login } from '../api/auth';
 import './LoginPage.css';
 
@@ -9,6 +9,7 @@ function LoginPage() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const location = useLocation();
     const navigate = useNavigate();
 
     const handleLogin = async () => {
@@ -64,6 +65,10 @@ function LoginPage() {
                             onChange={(event) => setPassword(event.target.value)}
                             onPressEnter={handleLogin}
                         />
+
+                        {location.state?.registrationSuccess ? (
+                            <Alert title="Регистрация прошла успешно. Теперь войдите в систему." type="success" showIcon />
+                        ) : null}
 
                         {error ? <Alert title={error} type="error" showIcon /> : null}
 

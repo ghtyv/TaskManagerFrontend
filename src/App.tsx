@@ -2,6 +2,7 @@ import { ConfigProvider } from 'antd';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import LoginPage from "./pages/LoginPage.tsx";
+import SignupPage from './pages/SignupPage.tsx';
 import TaskDetailsPage from './pages/TaskDetailsPage.tsx';
 import TasksPage from './pages/TasksPage.tsx';
 
@@ -20,6 +21,7 @@ function App() {
               <Routes>
                   <Route path={"/"} element={<Navigate to={"/tasks"} replace={true} />} />
                   <Route path={"/login"} element={<LoginPage />} />
+                  <Route path={"/signup"} element={<SignupPage />} />
                   <Route element={<ProtectedRoute />}>
                       <Route path={"/tasks"} element={<TasksPage />} />
                       <Route path={"/tasks/:id"} element={<TaskDetailsPage />} />

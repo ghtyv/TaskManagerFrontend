@@ -5,12 +5,33 @@ type LoginPayload = {
     password: string;
 };
 
-export async function login({ email, password }: LoginPayload) {
-    const formData = new FormData();
-    formData.append('email', email);
-    formData.append('password', password);
+type RegisterPayload = {
+    email: string;
+    password: string;
+};
 
-    return apiClient.post('/auth/login', formData);
+export async function login({ email, password }: LoginPayload) {
+    const payload = new URLSearchParams();
+    payload.append('email', email);
+    payload.append('password', password);
+
+    return apiClient.post('/auth/login', payload, {
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+    });
+}
+
+export async function register({ email, password }: RegisterPayload) {
+    const payload = new URLSearchParams();
+    payload.append('email', email);
+    payload.append('password', password);
+
+    return apiClient.post('/auth/registration', payload, {
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+    });
 }
 
 export async function getCurrentUser() {
