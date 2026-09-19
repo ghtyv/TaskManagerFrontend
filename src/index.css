@@ -4,9 +4,9 @@
   --bg: #f6efe7;
   --border: rgba(128, 92, 58, 0.14);
   --code-bg: #f2e9dd;
-  --accent: #b55a1f;
-  --accent-bg: rgba(181, 90, 31, 0.12);
-  --accent-border: rgba(181, 90, 31, 0.3);
+  --accent: #2f8f57;
+  --accent-bg: rgba(47, 143, 87, 0.12);
+  --accent-border: rgba(47, 143, 87, 0.3);
   --shadow:
     rgba(69, 43, 18, 0.12) 0 18px 40px -18px, rgba(69, 43, 18, 0.08) 0 10px 18px -12px;
 
@@ -31,7 +31,6 @@
 #root {
   min-height: 100svh;
   width: 100%;
-  min-height: 100svh;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;

@@ -5,9 +5,9 @@
     justify-content: center;
     padding: 24px;
     background:
-        radial-gradient(circle at top left, rgba(255, 196, 118, 0.28), transparent 34%),
-        radial-gradient(circle at bottom left, rgba(196, 234, 255, 0.4), transparent 32%),
-        linear-gradient(135deg, #fff7ec 0%, #f6fbff 50%, #fffdf6 100%);
+        radial-gradient(circle at top left, rgba(150, 230, 185, 0.28), transparent 34%),
+        radial-gradient(circle at bottom left, rgba(214, 240, 226, 0.45), transparent 32%),
+        linear-gradient(135deg, #f4fff7 0%, #f4fbf6 52%, #f8fffb 100%);
 }
 
 .login-page__card-wrap {
@@ -20,8 +20,8 @@
 .login-page__card.ant-card {
     width: min(100%, 430px);
     border-radius: 32px;
-    border: 1px solid rgba(148, 104, 39, 0.12);
-    box-shadow: 0 28px 70px rgba(82, 53, 21, 0.14);
+    border: 1px solid rgba(47, 143, 87, 0.14);
+    box-shadow: 0 28px 70px rgba(34, 94, 59, 0.14);
     background: rgba(255, 255, 255, 0.88);
     backdrop-filter: blur(18px);
 }
@@ -38,7 +38,7 @@
 .login-page__card-copy.ant-typography {
     display: block;
     margin-bottom: 28px;
-    color: #6d5c4d;
+    color: #4d6958;
 }
 
 .login-page__form {
@@ -47,7 +47,7 @@
 }
 
 .login-page__label {
-    color: #4a3726;
+    color: #2b4d39;
     font-weight: 600;
     text-align: left;
 }
@@ -62,21 +62,21 @@
     height: 50px;
     border-radius: 14px;
     font-weight: 600;
-    box-shadow: 0 14px 30px rgba(176, 93, 32, 0.2);
+    box-shadow: 0 14px 30px rgba(47, 143, 87, 0.2);
 }
 
 .login-page__footer {
     text-align: center;
-    color: #6d5c4d;
+    color: #4d6958;
 }
 
 .login-page__footer-link {
-    color: #9f4d18;
+    color: #2f8f57;
     font-weight: 600;
 }
 
 .login-page__footer-link:hover {
-    color: #7f3a0f;
+    color: #236a40;
 }
 
 @media (max-width: 980px) {

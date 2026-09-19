@@ -188,7 +188,7 @@ function TasksPage() {
                     </div>
                 ) : (
                     <List
-                        grid={{ gutter: 20, xs: 1, lg: 2 }}
+                        className="tasks-grid"
                         dataSource={visibleTasks}
                         renderItem={(task) => (
                             <List.Item>

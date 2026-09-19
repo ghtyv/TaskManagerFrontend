@@ -77,7 +77,7 @@ function TaskCreateModal({
                     </Typography.Text>
                 ) : (
                     <Typography.Text className="task-create__hint">
-                        Если исполнитель не выбран, задача будет создана без назначения.
+                        Если исполнитель не выбран, задача будет создана без исполнителя.
                     </Typography.Text>
                 )}
 
