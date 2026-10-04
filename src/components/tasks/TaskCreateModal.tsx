@@ -1,4 +1,5 @@
-import { Form, Input, Modal, Typography, type FormInstance } from 'antd';
+import { DatePicker, Form, Input, Modal, Typography, type FormInstance } from 'antd';
+import type { Dayjs } from 'dayjs';
 import type { UserListItem } from '../../api/users';
 import AssigneeSelect from './AssigneeSelect';
 
@@ -7,6 +8,7 @@ const { TextArea } = Input;
 export type TaskCreateFormValues = {
     title: string;
     description?: string;
+    deadline?: Dayjs | null;
     assigneeId?: number | null;
 };
 
@@ -57,6 +59,15 @@ function TaskCreateModal({
 
                 <Form.Item name="description" label="Описание">
                     <TextArea rows={4} placeholder="Опишите задачу" />
+                </Form.Item>
+
+                <Form.Item name="deadline" label="Срок выполнения">
+                    <DatePicker
+                        allowClear
+                        className="task-create__date-picker"
+                        format="DD.MM.YYYY"
+                        placeholder="Выберите дату"
+                    />
                 </Form.Item>
 
                 <Form.Item name="assigneeId" label="Исполнитель">

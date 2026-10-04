@@ -12,6 +12,21 @@ export function getTaskState(open: boolean) {
     return open ? 'Открыта' : 'Закрыта';
 }
 
+export function formatTaskDeadline(deadline: string | null) {
+    if (!deadline) {
+        return 'не указан';
+    }
+
+    const [datePart] = deadline.split('T');
+    const [year, month, day] = datePart.split('-');
+
+    if (!year || !month || !day) {
+        return deadline;
+    }
+
+    return `${day}.${month}.${year}`;
+}
+
 export function getAssigneeLabel(
     assigneeId: number | null,
     usersById: UserLabels,

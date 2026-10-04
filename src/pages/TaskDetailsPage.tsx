@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button, Card, Flex, Form, Layout, Space, Spin, Tag, Typography } from 'antd';
+import dayjs from 'dayjs';
 import { useNavigate, useParams } from 'react-router';
 import { getTaskById, updateTask, type Task } from '../api/tasks';
 import { getUsers, type UserListItem } from '../api/users';
@@ -9,6 +10,10 @@ import { getAssigneeLabel, getTaskState } from '../components/tasks/taskPresenta
 import './TasksPage.css';
 
 const { Content } = Layout;
+
+function toDeadlinePayload(deadline: TaskEditFormValues['deadline']) {
+    return deadline ? `${deadline.format('YYYY-MM-DD')}T00:00:00` : null;
+}
 
 function TaskDetailsPage() {
     const { id } = useParams();
@@ -98,6 +103,7 @@ function TaskDetailsPage() {
         form.setFieldsValue({
             title: task.title,
             description: task.description ?? '',
+            deadline: task.deadline ? dayjs(task.deadline) : null,
             open: task.open,
             assigneeId: task.assigneeId ?? undefined,
         });
@@ -132,6 +138,7 @@ function TaskDetailsPage() {
                 title: values.title.trim(),
                 description: values.description?.trim() ? values.description.trim() : null,
                 open: values.open,
+                deadline: toDeadlinePayload(values.deadline),
                 assigneeId: values.assigneeId ?? null,
             });
 
@@ -220,6 +227,7 @@ function TaskDetailsPage() {
 
                                 <TaskMeta
                                     id={task.id}
+                                    deadline={task.deadline}
                                     stateLabel={getTaskState(task.open)}
                                     assigneeLabel={getAssigneeLabel(task.assigneeId, usersById, isUsersLoading)}
                                 />

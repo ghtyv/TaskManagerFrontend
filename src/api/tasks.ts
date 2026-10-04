@@ -5,12 +5,14 @@ export type Task = {
     title: string;
     description: string | null;
     open: boolean;
+    deadline: string | null;
     assigneeId: number | null;
 };
 
 export type CreateTaskPayload = {
     title: string;
     description?: string;
+    deadline?: string | null;
     assigneeId?: number | null;
 };
 
@@ -18,6 +20,7 @@ export type UpdateTaskPayload = {
     title: string;
     description: string | null;
     open: boolean;
+    deadline: string | null;
     assigneeId: number | null;
 };
 

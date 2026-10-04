@@ -17,6 +17,10 @@ import './TasksPage.css';
 const { Content, Header } = Layout;
 const { Search } = Input;
 
+function toDeadlinePayload(deadline: TaskCreateFormValues['deadline']) {
+    return deadline ? `${deadline.format('YYYY-MM-DD')}T00:00:00` : null;
+}
+
 function TasksPage() {
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -89,6 +93,7 @@ function TasksPage() {
             const createdTask = await createTask({
                 title: values.title.trim(),
                 description: values.description?.trim() || undefined,
+                deadline: toDeadlinePayload(values.deadline),
                 assigneeId: values.assigneeId ?? null,
             });
 

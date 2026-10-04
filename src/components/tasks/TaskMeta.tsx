@@ -1,12 +1,14 @@
 import { Descriptions, Space, Typography } from 'antd';
+import { formatTaskDeadline } from './taskPresentation';
 
 type TaskMetaProps = {
     assigneeLabel: string;
+    deadline: string | null;
     id: number;
     stateLabel: string;
 };
 
-function TaskMeta({ assigneeLabel, id, stateLabel }: TaskMetaProps) {
+function TaskMeta({ assigneeLabel, deadline, id, stateLabel }: TaskMetaProps) {
     return (
         <Space direction="vertical" size={10} className="task-details__meta">
             <Typography.Text className="task-details__section-label">
@@ -15,6 +17,9 @@ function TaskMeta({ assigneeLabel, id, stateLabel }: TaskMetaProps) {
             <Descriptions bordered column={1} size="middle">
                 <Descriptions.Item label="ID задачи">{id}</Descriptions.Item>
                 <Descriptions.Item label="Статус">{stateLabel}</Descriptions.Item>
+                <Descriptions.Item label="Срок выполнения">
+                    {formatTaskDeadline(deadline)}
+                </Descriptions.Item>
                 <Descriptions.Item label="Исполнитель">{assigneeLabel}</Descriptions.Item>
             </Descriptions>
         </Space>

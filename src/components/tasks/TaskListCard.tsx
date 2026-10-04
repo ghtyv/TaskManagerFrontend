@@ -1,6 +1,6 @@
 import { Button, Card, Space, Tag, Typography } from 'antd';
 import type { Task } from '../../api/tasks';
-import { getTaskState } from './taskPresentation';
+import { formatTaskDeadline, getTaskState } from './taskPresentation';
 
 type TaskListCardProps = {
     assigneeLabel: string;
@@ -37,9 +37,14 @@ function TaskListCard({ assigneeLabel, task, onOpen }: TaskListCardProps) {
                 <Typography.Paragraph className="task-card__description" ellipsis={{ rows: 2 }}>
                     {task.description || 'Описание не указано.'}
                 </Typography.Paragraph>
-                <Typography.Text className="task-card__meta">
-                    Исполнитель: {assigneeLabel}
-                </Typography.Text>
+                <Space direction="vertical" size={4} className="task-card__meta-list">
+                    <Typography.Text className="task-card__meta">
+                        Срок: {formatTaskDeadline(task.deadline)}
+                    </Typography.Text>
+                    <Typography.Text className="task-card__meta">
+                        Исполнитель: {assigneeLabel}
+                    </Typography.Text>
+                </Space>
             </Space>
         </Card>
     );

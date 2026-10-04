@@ -110,7 +110,15 @@
     color: #667085;
 }
 
+.task-card__meta-list.ant-space {
+    width: 100%;
+}
+
 .task-create__assignee-input.ant-select {
+    width: 100%;
+}
+
+.task-create__date-picker.ant-picker {
     width: 100%;
 }
 
