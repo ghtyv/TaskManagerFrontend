@@ -1,6 +1,7 @@
 import { Button, Card, Space, Tag, Typography } from 'antd';
 import type { Task } from '../../api/tasks';
-import { formatTaskDeadline, getTaskState } from './taskPresentation';
+import SubtaskProgress from './SubtaskProgress';
+import { deadlineHint, getDeadlineTone, formatTaskDeadline, getTaskState } from './taskPresentation';
 
 type TaskListCardProps = {
     assigneeLabel: string;
@@ -32,18 +33,16 @@ function TaskListCard({ assigneeLabel, task, onOpen }: TaskListCardProps) {
                     <Typography.Title level={4} className="task-card__title" ellipsis={{ rows: 2 }}>
                         {task.title}
                     </Typography.Title>
-                    <Tag color={task.open ? 'green' : 'default'}>{getTaskState(task.open)}</Tag>
+                    <Tag color={task.open ? 'default' : 'green'}>{getTaskState(task.open)}</Tag>
                 </Space>
                 <Typography.Paragraph className="task-card__description" ellipsis={{ rows: 2 }}>
                     {task.description || 'Описание не указано.'}
                 </Typography.Paragraph>
-                <Space direction="vertical" size={4} className="task-card__meta-list">
-                    <Typography.Text className="task-card__meta">
-                        Срок: {formatTaskDeadline(task.deadline)}
-                    </Typography.Text>
-                    <Typography.Text className="task-card__meta">
-                        Исполнитель: {assigneeLabel}
-                    </Typography.Text>
+                <SubtaskProgress tasks={task.subTasks ?? []} />
+                <Space wrap>
+                    <Tag className={`tone-${task.open ? getDeadlineTone(true, task.deadline) : 'gray'}`}><span aria-hidden>▦</span> {formatTaskDeadline(task.deadline)}</Tag>
+                    {deadlineHint(task.open, task.deadline) && <Tag className={`tone-${getDeadlineTone(true, task.deadline)}`}>{deadlineHint(task.open, task.deadline)}</Tag>}
+                    <Tag><span aria-hidden>♙</span> {assigneeLabel}</Tag>
                 </Space>
             </Space>
         </Card>

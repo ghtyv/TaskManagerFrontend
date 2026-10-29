@@ -1,11 +1,13 @@
-import { Button, DatePicker, Form, Input, Modal, Switch, Typography, type FormInstance } from 'antd';
+import { Button, Form, Modal, Typography, type FormInstance } from 'antd';
 import type { Dayjs } from 'dayjs';
 import type { UserListItem } from '../../api/users';
-import AssigneeSelect from './AssigneeSelect';
+import { TaskFields, SubtaskFields } from './TaskFields';
+import type { TaskCreateFormValues } from './TaskCreateModal';
 
-const { TextArea } = Input;
+
 
 export type TaskEditFormValues = {
+    subTasks?: TaskCreateFormValues[];
     title: string;
     description?: string;
     deadline?: Dayjs | null;
@@ -40,6 +42,9 @@ function TaskEditModal({
 }: TaskEditModalProps) {
     return (
         <Modal
+            width={1000}
+            closable={!isUpdating}
+            maskClosable={!isUpdating}
             title="Изменить задачу"
             open={open}
             okText="Сохранить"
@@ -49,46 +54,8 @@ function TaskEditModal({
             onCancel={onCancel}
             destroyOnHidden
         >
-            <Form form={form} layout="vertical">
-                <Form.Item
-                    name="title"
-                    label="Название"
-                    rules={[
-                        { required: true, whitespace: true, message: 'Введите название задачи.' },
-                    ]}
-                >
-                    <Input maxLength={255} />
-                </Form.Item>
-
-                <Form.Item name="description" label="Описание">
-                    <TextArea rows={4} placeholder="Опишите задачу" />
-                </Form.Item>
-
-                <Form.Item name="deadline" label="Срок выполнения">
-                    <DatePicker
-                        allowClear
-                        className="task-create__date-picker"
-                        format="DD.MM.YYYY"
-                        placeholder="Выберите дату"
-                    />
-                </Form.Item>
-
-                <Form.Item name="assigneeId" label="Исполнитель">
-                    <AssigneeSelect
-                        allowClear
-                        className="task-create__assignee-input"
-                        isLoading={isUsersLoading}
-                        onChange={(value) => form.setFieldValue('assigneeId', value)}
-                        placeholder="Выберите пользователя"
-                        users={users}
-                        value={form.getFieldValue('assigneeId')}
-                    />
-                </Form.Item>
-
-                <Form.Item name="open" label="Статус задачи" valuePropName="checked">
-                    <Switch />
-                </Form.Item>
-
+            <Form form={form} layout="vertical" disabled={isUpdating}>
+                <div className="task-form-columns"><section><TaskFields users={users} loading={isUsersLoading} /></section><SubtaskFields users={users} loading={isUsersLoading} /></div>
                 {usersError ? (
                     <div className="task-edit-modal__users-error">
                         <Typography.Text type="warning" className="task-create__hint">

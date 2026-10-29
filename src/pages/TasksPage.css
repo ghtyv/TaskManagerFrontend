@@ -208,3 +208,35 @@
         width: 100%;
     }
 }
+
+.tasks-content { width: min(1560px, calc(100% - 64px)); }
+.tasks-header { line-height: 1.6; }
+.tasks-header .ant-breadcrumb { margin-bottom: 14px; }
+.tasks-header__title.ant-typography, .task-card__title.ant-typography, .task-details__title.ant-typography { font-family: Inter, 'Segoe UI', sans-serif; }
+.projects-grid, .tasks-grid .ant-list-items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.task-card { height: 100%; overflow-wrap: anywhere; min-width: 0; }
+.task-card .ant-card-body { padding: 22px; }
+.project-open.ant-btn { background: #ecfaf1; color: #00864b; border-color: #d9f2e3; }
+.task-form-columns { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 28px; padding: 18px 0; }
+.task-form-columns > section { min-width: 0; }
+.subtask-editor { border-left: 1px solid #edf0f3; padding-left: 24px; }
+.subtask-editor h3 { margin-top: 0; }
+.subtask-editor .ant-collapse-header { overflow-wrap: anywhere; }
+.subtask-progress { display: flex; gap: 12px; align-items: center; width: 100%; min-width: 0; }
+.subtask-progress__segments { display: flex; flex: 1; gap: 2px; min-width: 0; height: 12px; overflow: hidden; border-radius: 4px; }
+.subtask-progress__segment { flex: 1 1 0; min-width: 0; height: 100%; }
+.subtask-progress small { white-space: nowrap; color: #667085; }
+.tone-gray { color: #667085; background: #e9edf2; border-color: #e9edf2; }
+.tone-green { color: #087d49; background: #e7f7ed; border-color: #e7f7ed; }
+.tone-yellow { color: #946000; background: #fff3cf; border-color: #fff3cf; }
+.tone-red { color: #bb2637; background: #ffeaed; border-color: #ffeaed; }
+.subtask-progress__segment.tone-gray { background: #d4dae3; }
+.subtask-progress__segment.tone-green { background: #00a565; }
+.subtask-progress__segment.tone-yellow { background: #f3bd29; }
+.subtask-progress__segment.tone-red { background: #ee475d; }
+@media (min-width: 1400px) { .tasks-grid .ant-list-items { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 768px) {
+    .projects-grid, .tasks-grid .ant-list-items, .task-form-columns { grid-template-columns: minmax(0, 1fr); }
+    .subtask-editor { border-left: 0; padding-left: 0; border-top: 1px solid #edf0f3; padding-top: 20px; }
+    .tasks-content { width: calc(100% - 32px); }
+}

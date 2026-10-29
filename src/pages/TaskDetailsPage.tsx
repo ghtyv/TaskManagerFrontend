@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router';
 import { getTaskById, updateTask, type Task } from '../api/tasks';
 import { getUsers, type UserListItem } from '../api/users';
 import TaskEditModal, { type TaskEditFormValues } from '../components/tasks/TaskEditModal';
+import TaskListCard from '../components/tasks/TaskListCard';
 import TaskMeta from '../components/tasks/TaskMeta';
 import { getAssigneeLabel, getTaskState } from '../components/tasks/taskPresentation';
 import './TasksPage.css';
@@ -16,7 +17,7 @@ function toDeadlinePayload(deadline: TaskEditFormValues['deadline']) {
 }
 
 function TaskDetailsPage() {
-    const { id } = useParams();
+    const { id, projectId = '' } = useParams();
     const navigate = useNavigate();
     const [task, setTask] = useState<Task | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +45,7 @@ function TaskDetailsPage() {
             setIsUsersLoading(true);
             setError('');
 
-            const [taskResult, usersResult] = await Promise.allSettled([getTaskById(id), getUsers()]);
+            const [taskResult, usersResult] = await Promise.allSettled([getTaskById(projectId, id), getUsers()]);
 
             if (!isActive) {
                 return;
@@ -74,7 +75,7 @@ function TaskDetailsPage() {
         return () => {
             isActive = false;
         };
-    }, [id]);
+    }, [id, projectId]);
 
     const loadUsers = async () => {
         try {
@@ -101,6 +102,7 @@ function TaskDetailsPage() {
 
         setUpdateError('');
         form.setFieldsValue({
+            subTasks: task.subTasks.map(item => ({ ...item, subTasks: undefined, description: item.description ?? undefined, deadline: item.deadline ? dayjs(item.deadline) : null })),
             title: task.title,
             description: task.description ?? '',
             deadline: task.deadline ? dayjs(task.deadline) : null,
@@ -134,7 +136,9 @@ function TaskDetailsPage() {
             setIsUpdating(true);
             setUpdateError('');
 
-            const updatedTask = await updateTask(task.id, {
+            const updatedTask = await updateTask(projectId, task.id, {
+                subTasks: values.subTasks?.map(item => ({ ...(item.id ? { id: item.id } : {}), title: item.title.trim(), description: item.description?.trim() || null, open: item.open, deadline: toDeadlinePayload(item.deadline), assigneeId: item.assigneeId ?? null })),
+                removedSubtaskIds: task.subTasks.filter(item => !values.subTasks?.some(draft => draft.id === item.id)).map(item => item.id),
                 title: values.title.trim(),
                 description: values.description?.trim() ? values.description.trim() : null,
                 open: values.open,
@@ -143,6 +147,17 @@ function TaskDetailsPage() {
             });
 
             setTask(updatedTask);
+            const newDrafts = values.subTasks?.filter(item => !item.id) ?? [];
+            const newTasks = updatedTask.subTasks.filter(item => !task.subTasks.some(old => old.id === item.id));
+            if (newDrafts.some(item => item.open === false)) {
+                try {
+                    setTask(await updateTask(projectId, task.id, { subTasks: newTasks.map((item, i) => ({ id: item.id, open: newDrafts[i]?.open ?? true })) }));
+                } catch {
+                    setIsEditOpen(false);
+                    setUsersError('Изменения сохранены, но статусы новых подзадач остались открытыми. Откройте редактирование и повторите изменение статусов.');
+                    return;
+                }
+            }
             setIsEditOpen(false);
             form.resetFields();
         } catch (updateTaskError: unknown) {
@@ -161,14 +176,14 @@ function TaskDetailsPage() {
             <Layout className="tasks-layout">
                 <Content className="task-details">
                     <Space direction="vertical" size={20} className="task-details__stack">
-                        <Button onClick={() => navigate('/tasks')}>
+                        <Button onClick={() => navigate(`/projects/${projectId}`)}>
                             Назад к задачам
                         </Button>
 
                         <Card className="tasks-state__panel">
                             <Space direction="vertical" size={16}>
                                 <Typography.Text>{error}</Typography.Text>
-                                <Button type="primary" onClick={() => navigate('/tasks')}>
+                                <Button type="primary" onClick={() => navigate(`/projects/${projectId}`)}>
                                     Вернуться к задачам
                                 </Button>
                             </Space>
@@ -183,7 +198,7 @@ function TaskDetailsPage() {
         <Layout className="tasks-layout">
             <Content className="task-details">
                 <Space direction="vertical" size={20} className="task-details__stack">
-                    <Button onClick={() => navigate('/tasks')}>
+                    <Button onClick={() => navigate(`/projects/${projectId}`)}>
                         Назад к задачам
                     </Button>
 
@@ -195,7 +210,7 @@ function TaskDetailsPage() {
                         <Card className="tasks-state__panel">
                             <Space direction="vertical" size={16}>
                                 <Typography.Text>{error}</Typography.Text>
-                                <Button type="primary" onClick={() => navigate('/tasks')}>
+                                <Button type="primary" onClick={() => navigate(`/projects/${projectId}`)}>
                                     Вернуться к задачам
                                 </Button>
                             </Space>
@@ -208,7 +223,7 @@ function TaskDetailsPage() {
                                         <Typography.Title level={2} className="task-details__title">
                                             {task.title}
                                         </Typography.Title>
-                                        <Tag color={task.open ? 'green' : 'default'}>{getTaskState(task.open)}</Tag>
+                                        <Tag color={task.open ? 'default' : 'green'}>{getTaskState(task.open)}</Tag>
                                     </Flex>
 
                                     <Button type="primary" onClick={openEditModal}>
@@ -226,12 +241,14 @@ function TaskDetailsPage() {
                                 </div>
 
                                 <TaskMeta
+                                    open={task.open}
                                     id={task.id}
                                     deadline={task.deadline}
                                     stateLabel={getTaskState(task.open)}
                                     assigneeLabel={getAssigneeLabel(task.assigneeId, usersById, isUsersLoading)}
                                 />
 
+                                {!!task.subTasks.length && <section><Typography.Title level={4}>Подзадачи</Typography.Title><div className="projects-grid">{task.subTasks.map(item => <TaskListCard key={item.id} task={item} assigneeLabel={getAssigneeLabel(item.assigneeId, usersById)} onOpen={() => openEditModal()} />)}</div></section>}
                                 {usersError ? (
                                     <Typography.Text type="warning" className="task-details__warning">
                                         {usersError}

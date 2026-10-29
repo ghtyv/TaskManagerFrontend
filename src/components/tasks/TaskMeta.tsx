@@ -1,14 +1,15 @@
-import { Descriptions, Space, Typography } from 'antd';
-import { formatTaskDeadline } from './taskPresentation';
+import { Descriptions, Space, Tag, Typography } from 'antd';
+import { deadlineHint, getDeadlineTone, formatTaskDeadline } from './taskPresentation';
 
 type TaskMetaProps = {
     assigneeLabel: string;
     deadline: string | null;
     id: number;
     stateLabel: string;
+    open: boolean;
 };
 
-function TaskMeta({ assigneeLabel, deadline, id, stateLabel }: TaskMetaProps) {
+function TaskMeta({ assigneeLabel, deadline, id, stateLabel, open }: TaskMetaProps) {
     return (
         <Space direction="vertical" size={10} className="task-details__meta">
             <Typography.Text className="task-details__section-label">
@@ -18,7 +19,8 @@ function TaskMeta({ assigneeLabel, deadline, id, stateLabel }: TaskMetaProps) {
                 <Descriptions.Item label="ID задачи">{id}</Descriptions.Item>
                 <Descriptions.Item label="Статус">{stateLabel}</Descriptions.Item>
                 <Descriptions.Item label="Срок выполнения">
-                    {formatTaskDeadline(deadline)}
+                    <Tag className={`tone-${open ? getDeadlineTone(true, deadline) : 'gray'}`}>▦ {formatTaskDeadline(deadline)}</Tag>
+                    {deadlineHint(open, deadline) && <Tag className={`tone-${getDeadlineTone(true, deadline)}`}>{deadlineHint(open, deadline)}</Tag>}
                 </Descriptions.Item>
                 <Descriptions.Item label="Исполнитель">{assigneeLabel}</Descriptions.Item>
             </Descriptions>

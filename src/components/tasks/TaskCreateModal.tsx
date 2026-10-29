@@ -1,11 +1,14 @@
-import { DatePicker, Form, Input, Modal, Typography, type FormInstance } from 'antd';
+import { Form, Modal, Typography, type FormInstance } from 'antd';
 import type { Dayjs } from 'dayjs';
 import type { UserListItem } from '../../api/users';
-import AssigneeSelect from './AssigneeSelect';
+import { TaskFields, SubtaskFields } from './TaskFields';
 
-const { TextArea } = Input;
+
 
 export type TaskCreateFormValues = {
+    open: boolean;
+    subTasks?: TaskCreateFormValues[];
+    id?: number;
     title: string;
     description?: string;
     deadline?: Dayjs | null;
@@ -13,6 +16,7 @@ export type TaskCreateFormValues = {
 };
 
 type TaskCreateModalProps = {
+    isPartiallyCreated?: boolean;
     createError: string;
     form: FormInstance<TaskCreateFormValues>;
     isCreating: boolean;
@@ -25,6 +29,7 @@ type TaskCreateModalProps = {
 };
 
 function TaskCreateModal({
+    isPartiallyCreated,
     createError,
     form,
     isCreating,
@@ -37,6 +42,9 @@ function TaskCreateModal({
 }: TaskCreateModalProps) {
     return (
         <Modal
+            width={1000}
+            closable={!isCreating}
+            maskClosable={!isCreating}
             title="Создать задачу"
             open={open}
             okText="Создать"
@@ -46,42 +54,9 @@ function TaskCreateModal({
             onCancel={onCancel}
             destroyOnHidden
         >
-            <Form form={form} layout="vertical">
-                <Form.Item
-                    name="title"
-                    label="Название"
-                    rules={[
-                        { required: true, whitespace: true, message: 'Введите название задачи.' },
-                    ]}
-                >
-                    <Input maxLength={255} placeholder="Название" />
-                </Form.Item>
-
-                <Form.Item name="description" label="Описание">
-                    <TextArea rows={4} placeholder="Опишите задачу" />
-                </Form.Item>
-
-                <Form.Item name="deadline" label="Срок выполнения">
-                    <DatePicker
-                        allowClear
-                        className="task-create__date-picker"
-                        format="DD.MM.YYYY"
-                        placeholder="Выберите дату"
-                    />
-                </Form.Item>
-
-                <Form.Item name="assigneeId" label="Исполнитель">
-                    <AssigneeSelect
-                        allowClear
-                        className="task-create__assignee-input"
-                        isLoading={isUsersLoading}
-                        onChange={(value) => form.setFieldValue('assigneeId', value)}
-                        placeholder="Выберите пользователя"
-                        users={users}
-                        value={form.getFieldValue('assigneeId')}
-                    />
-                </Form.Item>
-
+            <Form form={form} layout="vertical" initialValues={{ open: true, subTasks: [] }} disabled={isCreating || isPartiallyCreated}>
+                <div className="task-form-columns"><section><TaskFields users={users} loading={isUsersLoading} /></section><SubtaskFields users={users} loading={isUsersLoading} /></div>
+                {isPartiallyCreated && <Typography.Paragraph type="warning">Задача и подзадачи созданы. Не удалось сохранить выбранные статусы. Нажмите «Создать», чтобы повторить сохранение статусов, или закройте окно: задача останется в проекте.</Typography.Paragraph>}
                 {usersError ? (
                     <Typography.Text type="warning" className="task-create__hint">
                         {usersError}

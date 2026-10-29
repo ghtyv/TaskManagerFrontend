@@ -4,7 +4,8 @@ import type { UserListItem } from '../api/users';
 import { getAssigneeLabel, type TaskStatusFilter } from '../components/tasks/taskPresentation';
 
 function useTaskFilters(tasks: Task[], users: UserListItem[]) {
-    const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('open');
+    const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('all');
+    const [sortOrder, setSortOrder] = useState('current');
     const [searchQuery, setSearchQuery] = useState('');
     const [assigneeFilter, setAssigneeFilter] = useState<string | number>('all');
 
@@ -66,10 +67,11 @@ function useTaskFilters(tasks: Task[], users: UserListItem[]) {
             const haystack = [task.title, task.description ?? '', assigneeLabel].join(' ').toLowerCase();
 
             return haystack.includes(normalizedQuery);
-        });
-    }, [assigneeFilter, searchQuery, statusFilter, tasks, usersById]);
+        }).sort((a, b) => sortOrder === 'title' ? a.title.localeCompare(b.title, 'ru') : sortOrder === 'deadline' ? (a.deadline ?? '9999').localeCompare(b.deadline ?? '9999') : Number(b.open) - Number(a.open) || b.id - a.id);
+    }, [sortOrder, assigneeFilter, searchQuery, statusFilter, tasks, usersById]);
 
     return {
+        sortOrder, setSortOrder,
         assigneeFilter,
         assigneeFilterOptions,
         searchQuery,

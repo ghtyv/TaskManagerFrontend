@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getTasks, type Task } from '../api/tasks';
 import { getUsers, type UserListItem } from '../api/users';
 
-function useTasksPageData() {
+function useTasksPageData(projectId: string) {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [users, setUsers] = useState<UserListItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -14,7 +14,7 @@ function useTasksPageData() {
         setIsLoading(true);
         setIsUsersLoading(true);
 
-        const [tasksResult, usersResult] = await Promise.allSettled([getTasks(), getUsers()]);
+        const [tasksResult, usersResult] = await Promise.allSettled([getTasks(projectId), getUsers()]);
 
         if (tasksResult.status === 'fulfilled') {
             setTasks(tasksResult.value);
@@ -32,7 +32,7 @@ function useTasksPageData() {
 
         setIsLoading(false);
         setIsUsersLoading(false);
-    }, []);
+    }, [projectId]);
 
     const loadUsers = useCallback(async () => {
         try {
@@ -54,7 +54,7 @@ function useTasksPageData() {
     useEffect(() => {
         let isActive = true;
 
-        Promise.allSettled([getTasks(), getUsers()])
+        Promise.allSettled([getTasks(projectId), getUsers()])
             .then(([tasksResult, usersResult]) => {
                 if (!isActive) {
                     return;
@@ -84,7 +84,7 @@ function useTasksPageData() {
         return () => {
             isActive = false;
         };
-    }, []);
+    }, [projectId]);
 
     return {
         error,

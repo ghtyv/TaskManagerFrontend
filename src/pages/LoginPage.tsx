@@ -22,7 +22,7 @@ function LoginPage() {
             setIsSubmitting(true);
             setError('');
             await login({ email, password });
-            navigate('/tasks');
+            navigate('/projects');
         } catch {
             setError('Неверный логин или пароль.');
         } finally {
