@@ -1,8 +1,9 @@
+import MetadataIcon from '../components/MetadataIcon';
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Flex, Form, Layout, Space, Spin, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Flex, Form, Layout, Popconfirm, Space, Spin, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useNavigate, useParams } from 'react-router';
-import { getTaskById, updateTask, type Task } from '../api/tasks';
+import { deleteTask, deleteSubtask, getTaskById, updateTask, type Task } from '../api/tasks';
 import { getUsers, type UserListItem } from '../api/users';
 import TaskEditModal, { type TaskEditFormValues } from '../components/tasks/TaskEditModal';
 import TaskListCard from '../components/tasks/TaskListCard';
@@ -26,6 +27,8 @@ function TaskDetailsPage() {
     const [usersError, setUsersError] = useState('');
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [actionError, setActionError] = useState('');
     const [error, setError] = useState('');
     const [updateError, setUpdateError] = useState('');
     const [form] = Form.useForm<TaskEditFormValues>();
@@ -42,6 +45,9 @@ function TaskDetailsPage() {
             }
 
             setIsLoading(true);
+            setActionError('');
+            setIsEditOpen(false);
+            form.resetFields();
             setIsUsersLoading(true);
             setError('');
 
@@ -75,7 +81,30 @@ function TaskDetailsPage() {
         return () => {
             isActive = false;
         };
-    }, [id, projectId]);
+    }, [id, projectId, form]);
+
+    const isSubtask = task?.parentTaskId != null;
+    const backPath = task?.parentTaskId != null
+        ? `/projects/${projectId}/tasks/${task.parentTaskId}`
+        : `/projects/${projectId}`;
+
+    const handleDelete = async () => {
+        if (!task || isDeleting || isUpdating) return;
+        setIsDeleting(true);
+        setActionError('');
+        try {
+            if (task.parentTaskId != null) {
+                await deleteSubtask(projectId, task.parentTaskId, task.id);
+            } else {
+                await deleteTask(projectId, task.id);
+            }
+            navigate(backPath, { replace: true });
+        } catch {
+            setActionError('Не удалось удалить задачу. Попробуйте снова.');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     const loadUsers = async () => {
         try {
@@ -135,6 +164,20 @@ function TaskDetailsPage() {
             const values = await form.validateFields();
             setIsUpdating(true);
             setUpdateError('');
+
+            if (task.parentTaskId != null) {
+                const parent = await updateTask(projectId, task.parentTaskId, {
+                    subTasks: [{ id: task.id, title: values.title.trim(),
+                        description: values.description?.trim() || null, open: values.open,
+                        deadline: toDeadlinePayload(values.deadline), assigneeId: values.assigneeId ?? null }],
+                });
+                const updatedSubtask = parent.subTasks.find(item => item.id === task.id);
+                if (!updatedSubtask) throw new Error('Updated subtask is missing');
+                setTask(updatedSubtask);
+                setIsEditOpen(false);
+                form.resetFields();
+                return;
+            }
 
             const updatedTask = await updateTask(projectId, task.id, {
                 subTasks: values.subTasks?.map(item => ({ ...(item.id ? { id: item.id } : {}), title: item.title.trim(), description: item.description?.trim() || null, open: item.open, deadline: toDeadlinePayload(item.deadline), assigneeId: item.assigneeId ?? null })),
@@ -198,9 +241,13 @@ function TaskDetailsPage() {
         <Layout className="tasks-layout">
             <Content className="task-details">
                 <Space direction="vertical" size={20} className="task-details__stack">
-                    <Button onClick={() => navigate(`/projects/${projectId}`)}>
-                        Назад к задачам
-                    </Button>
+                    <Space wrap>
+                        <Button onClick={() => navigate(backPath)}>
+                            {isSubtask ? '← К родительской задаче' : '← К задачам проекта'}
+                        </Button>
+                        <Button type="link" onClick={() => navigate('/projects')}>Все проекты</Button>
+                    </Space>
+                    {actionError && <Alert type="error" title={actionError} closable onClose={() => setActionError('')} />}
 
                     {isLoading ? (
                         <div className="tasks-state">
@@ -223,12 +270,23 @@ function TaskDetailsPage() {
                                         <Typography.Title level={2} className="task-details__title">
                                             {task.title}
                                         </Typography.Title>
-                                        <Tag color={task.open ? 'default' : 'green'}>{getTaskState(task.open)}</Tag>
+                                        <Tag className={`task-status-chip tone-${task.open ? 'gray' : 'green'}`}>{getTaskState(task.open)}</Tag>
                                     </Flex>
 
-                                    <Button type="primary" onClick={openEditModal}>
-                                        Изменить
-                                    </Button>
+                                    <Space wrap>
+                                        <Button type="primary" disabled={isDeleting} onClick={openEditModal}>
+                                            Изменить
+                                        </Button>
+                                        <Popconfirm
+                                            title={isSubtask ? 'Удалить подзадачу?' : 'Удалить задачу?'}
+                                            description={isSubtask ? 'Подзадача больше не будет доступна.' : 'Задача и её подзадачи больше не будут доступны.'}
+                                            okText="Удалить" cancelText="Отмена" okButtonProps={{ danger: true, loading: isDeleting }}
+                                            disabled={isDeleting || isUpdating}
+                                            onConfirm={handleDelete}
+                                        >
+                                            <Button danger icon={<MetadataIcon type="delete" />} aria-label={isSubtask ? "Удалить подзадачу" : "Удалить задачу"} title={isSubtask ? "Удалить подзадачу" : "Удалить задачу"} loading={isDeleting} disabled={isUpdating} />
+                                        </Popconfirm>
+                                    </Space>
                                 </Flex>
 
                                 <div className="task-details__section">
@@ -248,7 +306,7 @@ function TaskDetailsPage() {
                                     assigneeLabel={getAssigneeLabel(task.assigneeId, usersById, isUsersLoading)}
                                 />
 
-                                {!!task.subTasks.length && <section><Typography.Title level={4}>Подзадачи</Typography.Title><div className="projects-grid">{task.subTasks.map(item => <TaskListCard key={item.id} task={item} assigneeLabel={getAssigneeLabel(item.assigneeId, usersById)} onOpen={() => openEditModal()} />)}</div></section>}
+                                {!!task.subTasks.length && <section><Typography.Title level={4}>Подзадачи</Typography.Title><div className="projects-grid">{task.subTasks.map(item => <TaskListCard key={item.id} task={item} assigneeLabel={getAssigneeLabel(item.assigneeId, usersById)} usersById={usersById} onDelete={async () => { await deleteSubtask(projectId, task.id, item.id); setTask(current => current ? { ...current, subTasks: current.subTasks.filter(subtask => subtask.id !== item.id) } : current); }} onOpen={subtaskId => navigate(`/projects/${projectId}/tasks/${subtaskId}`)} />)}</div></section>}
                                 {usersError ? (
                                     <Typography.Text type="warning" className="task-details__warning">
                                         {usersError}
@@ -261,6 +319,7 @@ function TaskDetailsPage() {
             </Content>
 
             <TaskEditModal
+                isSubtask={isSubtask}
                 form={form}
                 isUsersLoading={isUsersLoading}
                 isUpdating={isUpdating}

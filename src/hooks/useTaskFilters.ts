@@ -4,7 +4,7 @@ import type { UserListItem } from '../api/users';
 import { getAssigneeLabel, type TaskStatusFilter } from '../components/tasks/taskPresentation';
 
 function useTaskFilters(tasks: Task[], users: UserListItem[]) {
-    const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('all');
+    const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('open');
     const [sortOrder, setSortOrder] = useState('current');
     const [searchQuery, setSearchQuery] = useState('');
     const [assigneeFilter, setAssigneeFilter] = useState<string | number>('all');

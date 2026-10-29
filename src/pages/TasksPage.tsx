@@ -1,8 +1,9 @@
+import MetadataIcon from '../components/MetadataIcon';
 import { useEffect, useState } from 'react';
 import { Alert, Breadcrumb, Select, Tag, Button, Card, Empty, Flex, Form, Input, Layout, List, Segmented, Space, Spin, Typography } from 'antd';
 import { Link, useNavigate, useParams } from 'react-router';
 import { logout } from '../api/auth';
-import { createTask, updateTask, type Task } from '../api/tasks';
+import { createTask, deleteTask, updateTask, type Task } from '../api/tasks';
 import AssigneeSelect from '../components/tasks/AssigneeSelect';
 import TaskCreateModal, { type TaskCreateFormValues } from '../components/tasks/TaskCreateModal';
 import TaskListCard from '../components/tasks/TaskListCard';
@@ -44,6 +45,7 @@ function TasksPage() {
         isUsersLoading,
         loadUsers,
         prependTask,
+        removeTask,
         refreshAll,
         tasks,
         users,
@@ -130,7 +132,7 @@ function TasksPage() {
                     <Breadcrumb items={[{ title: <Link to="/projects">Проекты</Link> }, { title: project?.title ?? 'Проект' }, { title: 'Задачи' }]} />
                     <Flex gap={12} align="center" wrap><Typography.Title level={2} className="tasks-header__title">
                         {project?.title ?? "Проект"}
-                    </Typography.Title>{project && <><Tag color={project.open ? 'green' : 'default'}>{project.open ? 'Открыт' : 'Закрыт'}</Tag><Tag>♙ Руководитель: {project.leadId === null ? 'не назначен' : usersById.get(project.leadId) ?? `пользователь #${project.leadId}`}</Tag></>}</Flex>
+                    </Typography.Title>{project && <><Tag className="project-header-chip" color={project.open ? 'green' : 'default'}>{project.open ? 'Открыт' : 'Закрыт'}</Tag><Tag className="person-chip project-header-chip"><MetadataIcon type="user" /> Руководитель: {project.leadId === null ? 'не назначен' : usersById.get(project.leadId) ?? `пользователь #${project.leadId}`}</Tag></>}</Flex>
                     <Typography.Text className="tasks-header__meta">{project?.description || 'Описание не указано.'}</Typography.Text>
                 </div>
 
@@ -217,6 +219,8 @@ function TasksPage() {
                                     task={task}
                                     assigneeLabel={getAssigneeLabel(task.assigneeId, usersById)}
                                     onOpen={openTask}
+                                    usersById={usersById}
+                                    onDelete={async () => { await deleteTask(projectId, task.id); removeTask(task.id); }}
                                 />
                             </List.Item>
                         )}

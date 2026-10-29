@@ -48,3 +48,11 @@ export async function updateTask(projectId: string, taskId: number, payload: Upd
     const response = await apiClient.patch<Task>(`/projects/${projectId}/tasks/${taskId}`, payload);
     return response.data;
 }
+
+export async function deleteTask(projectId: string, taskId: number) {
+    await apiClient.delete(`/projects/${projectId}/tasks/${taskId}`);
+}
+
+export async function deleteSubtask(projectId: string, parentTaskId: number, subtaskId: number) {
+    await apiClient.delete(`/projects/${projectId}/tasks/${parentTaskId}/subtasks/${subtaskId}`);
+}

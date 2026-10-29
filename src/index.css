@@ -94,3 +94,29 @@ a {
 * {
   box-sizing: border-box;
 }
+
+/* Soft gradients and restrained interaction feedback. */
+.ant-btn.ant-btn-primary:not(.ant-btn-dangerous) {
+  background-image: linear-gradient(110deg, #00b96b, #008d58);
+  border-color: #009b61;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 3px 8px rgba(0, 155, 97, 0.12);
+  font-weight: 600;
+}
+.ant-btn.ant-btn-primary:not(.ant-btn-dangerous):not(:disabled):hover {
+  background-image: linear-gradient(110deg, #11c77b, #009c64);
+  border-color: #00a76a;
+}
+.ant-btn.ant-btn-primary:disabled {
+  background-image: none;
+  box-shadow: none;
+}
+.ant-modal .ant-modal-footer .ant-btn-primary { min-height: 42px; padding-inline: 22px; }
+
+.ant-btn { transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease; }
+.ant-btn:not(:disabled):not(.ant-btn-loading):hover { transform: translateY(-1px); }
+.ant-btn:not(:disabled):not(.ant-btn-loading):active { transform: translateY(0); }
+.ant-btn:focus-visible { outline: 2px solid #009b61; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  .ant-btn, .task-card.ant-card { transition: none; }
+  .ant-btn:not(:disabled):hover, .task-card.ant-card:hover { transform: none; }
+}

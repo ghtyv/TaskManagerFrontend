@@ -12,8 +12,14 @@ function App() {
       <ConfigProvider
           theme={{
               token: {
-                  colorPrimary: '#2f8f57',
-                  borderRadius: 14,
+                  colorPrimary: '#009b61',
+                  borderRadius: 10,
+                  controlHeight: 40,
+                  controlHeightLG: 46,
+                  colorBorder: '#dce4ee',
+                  colorText: '#17233a',
+                  colorTextSecondary: '#657793',
+                  colorBgLayout: '#f3f7fc',
                   fontFamily: '"Inter", "Segoe UI", sans-serif',
               },
           }}

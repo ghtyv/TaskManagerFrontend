@@ -86,7 +86,12 @@ function useTasksPageData(projectId: string) {
         };
     }, [projectId]);
 
+    const removeTask = useCallback((taskId: number) => {
+        setTasks(current => current.filter(task => task.id !== taskId));
+    }, []);
+
     return {
+        removeTask,
         error,
         isLoading,
         isUsersLoading,

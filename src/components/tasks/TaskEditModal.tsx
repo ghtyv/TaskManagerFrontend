@@ -16,6 +16,7 @@ export type TaskEditFormValues = {
 };
 
 type TaskEditModalProps = {
+    isSubtask?: boolean;
     form: FormInstance<TaskEditFormValues>;
     isUsersLoading: boolean;
     isUpdating: boolean;
@@ -29,6 +30,7 @@ type TaskEditModalProps = {
 };
 
 function TaskEditModal({
+    isSubtask = false,
     form,
     isUsersLoading,
     isUpdating,
@@ -42,10 +44,10 @@ function TaskEditModal({
 }: TaskEditModalProps) {
     return (
         <Modal
-            width={1000}
+            width={isSubtask ? 520 : 1000}
             closable={!isUpdating}
             maskClosable={!isUpdating}
-            title="Изменить задачу"
+            title={isSubtask ? "Изменить подзадачу" : "Изменить задачу"}
             open={open}
             okText="Сохранить"
             cancelText="Отмена"
@@ -55,7 +57,7 @@ function TaskEditModal({
             destroyOnHidden
         >
             <Form form={form} layout="vertical" disabled={isUpdating}>
-                <div className="task-form-columns"><section><TaskFields users={users} loading={isUsersLoading} /></section><SubtaskFields users={users} loading={isUsersLoading} /></div>
+                <div className={isSubtask ? undefined : "task-form-columns"}><section><TaskFields users={users} loading={isUsersLoading} /></section>{!isSubtask && <SubtaskFields users={users} loading={isUsersLoading} />}</div>
                 {usersError ? (
                     <div className="task-edit-modal__users-error">
                         <Typography.Text type="warning" className="task-create__hint">
