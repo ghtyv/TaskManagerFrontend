@@ -1,16 +1,31 @@
+import { toAttachmentPayload } from '../components/tasks/attachmentPayload';
 import MetadataIcon from '../components/MetadataIcon';
 import { useEffect, useState } from 'react';
-import { Alert, Breadcrumb, Select, Tag, Button, Card, Empty, Flex, Form, Input, Layout, List, Segmented, Space, Spin, Typography } from 'antd';
+import {
+    Alert,
+    Breadcrumb,
+    Select,
+    Tag,
+    Button,
+    Card,
+    Empty,
+    Flex,
+    Form,
+    Input,
+    Layout,
+    List,
+    Segmented,
+    Space,
+    Spin,
+    Typography,
+} from 'antd';
 import { Link, useNavigate, useParams } from 'react-router';
 import { logout } from '../api/auth';
 import { createTask, deleteTask, updateTask, type Task } from '../api/tasks';
 import AssigneeSelect from '../components/tasks/AssigneeSelect';
 import TaskCreateModal, { type TaskCreateFormValues } from '../components/tasks/TaskCreateModal';
 import TaskListCard from '../components/tasks/TaskListCard';
-import {
-    getAssigneeLabel,
-    TASK_STATUS_FILTER_OPTIONS,
-} from '../components/tasks/taskPresentation';
+import { getAssigneeLabel, TASK_STATUS_FILTER_OPTIONS } from '../components/tasks/taskPresentation';
 import useTaskFilters from '../hooks/useTaskFilters';
 import useTasksPageData from '../hooks/useTasksPageData';
 import { getProject, type Project } from '../api/projects';
@@ -27,11 +42,25 @@ function TasksPage() {
     const { projectId = '' } = useParams();
     const [project, setProject] = useState<Project | null>(null);
     const [projectError, setProjectError] = useState('');
-    const [pendingStatus, setPendingStatus] = useState<{ task: Task; values: TaskCreateFormValues } | null>(null);
+    const [pendingStatus, setPendingStatus] = useState<{
+        task: Task;
+        values: TaskCreateFormValues;
+    } | null>(null);
     useEffect(() => {
         let active = true;
-        getProject(projectId).then(p => { if (active) { setProject(p); setProjectError(''); } }).catch(() => { if (active) setProjectError('Не удалось загрузить проект.'); });
-        return () => { active = false; };
+        getProject(projectId)
+            .then((p) => {
+                if (active) {
+                    setProject(p);
+                    setProjectError('');
+                }
+            })
+            .catch(() => {
+                if (active) setProjectError('Не удалось загрузить проект.');
+            });
+        return () => {
+            active = false;
+        };
     }, [projectId]);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -52,7 +81,8 @@ function TasksPage() {
         usersError,
     } = useTasksPageData(projectId);
     const {
-        sortOrder, setSortOrder,
+        sortOrder,
+        setSortOrder,
         assigneeFilter,
         assigneeFilterOptions,
         searchQuery,
@@ -76,7 +106,9 @@ function TasksPage() {
             navigate('/login', { replace: true });
         } catch {
             setProjectError('Не удалось выйти. Повторите попытку.');
-        } finally { setIsLoggingOut(false); }
+        } finally {
+            setIsLoggingOut(false);
+        }
     };
 
     const openCreateModal = () => {
@@ -93,7 +125,10 @@ function TasksPage() {
             return;
         }
 
-        if (pendingStatus) { void refreshAll(); setPendingStatus(null); }
+        if (pendingStatus) {
+            void refreshAll();
+            setPendingStatus(null);
+        }
         setIsCreateOpen(false);
         setCreateError('');
         form.resetFields();
@@ -101,25 +136,49 @@ function TasksPage() {
 
     const handleCreateTask = async () => {
         try {
-            const values = pendingStatus?.values ?? await form.validateFields();
+            const values = pendingStatus?.values ?? (await form.validateFields());
             setIsCreating(true);
             setCreateError('');
-            const payload = (item: TaskCreateFormValues) => ({ title: item.title.trim(), description: item.description?.trim() || undefined, deadline: toDeadlinePayload(item.deadline), assigneeId: item.assigneeId ?? null });
-            let createdTask = pendingStatus?.task ?? await createTask(projectId, { ...payload(values), subTasks: values.subTasks?.map(payload) });
-            if (values.open === false || values.subTasks?.some(item => item.open === false)) {
+            const payload = (item: TaskCreateFormValues) => ({
+                title: item.title.trim(),
+                description: item.description?.trim() || undefined,
+                deadline: toDeadlinePayload(item.deadline),
+                assigneeId: item.assigneeId ?? null,
+                newAttachments: toAttachmentPayload(item.attachmentFiles),
+            });
+            let createdTask =
+                pendingStatus?.task ??
+                (await createTask(projectId, {
+                    ...payload(values),
+                    subTasks: values.subTasks?.map(payload),
+                }));
+
+            if (values.open === false || values.subTasks?.some((item) => item.open === false)) {
                 setPendingStatus({ task: createdTask, values });
-                createdTask = await updateTask(projectId, createdTask.id, { open: values.open, subTasks: createdTask.subTasks.map((item, index) => ({ id: item.id, open: values.subTasks?.[index]?.open ?? true })) });
+                createdTask = await updateTask(projectId, createdTask.id, {
+                    open: values.open,
+                    subTasks: createdTask.subTasks.map((item, index) => ({
+                        id: item.id,
+                        open: values.subTasks?.[index]?.open ?? true,
+                    })),
+                });
             }
             prependTask(createdTask);
             setPendingStatus(null);
             setIsCreateOpen(false);
             form.resetFields();
         } catch (createTaskError: unknown) {
-            if (typeof createTaskError === 'object' && createTaskError !== null && 'errorFields' in createTaskError) {
+            if (
+                typeof createTaskError === 'object' &&
+                createTaskError !== null &&
+                'errorFields' in createTaskError
+            ) {
                 return;
             }
 
-            setCreateError('Не удалось завершить сохранение. Если задача уже создана, повторная попытка сохранит её статусы без дубликата.');
+            setCreateError(
+                'Не удалось завершить сохранение. Если задача уже создана, повторная попытка сохранит её статусы без дубликата.',
+            );
         } finally {
             setIsCreating(false);
         }
@@ -129,18 +188,60 @@ function TasksPage() {
         <Layout className="tasks-layout">
             <Header className="tasks-header">
                 <div>
-                    <Breadcrumb items={[{ title: <Link to="/projects">Проекты</Link> }, { title: project?.title ?? 'Проект' }, { title: 'Задачи' }]} />
-                    <Flex gap={12} align="center" wrap><Typography.Title level={2} className="tasks-header__title">
-                        {project?.title ?? "Проект"}
-                    </Typography.Title>{project && <><Tag className="project-header-chip" color={project.open ? 'green' : 'default'}>{project.open ? 'Открыт' : 'Закрыт'}</Tag><Tag className="person-chip project-header-chip"><MetadataIcon type="user" /> Руководитель: {project.leadId === null ? 'не назначен' : usersById.get(project.leadId) ?? `пользователь #${project.leadId}`}</Tag></>}</Flex>
-                    <Typography.Text className="tasks-header__meta">{project?.description || 'Описание не указано.'}</Typography.Text>
+                    <Breadcrumb
+                        items={[
+                            { title: <Link to="/projects">Проекты</Link> },
+                            { title: project?.title ?? 'Проект' },
+                            { title: 'Задачи' },
+                        ]}
+                    />
+                    <Flex gap={12} align="center" wrap>
+                        <Typography.Title level={2} className="tasks-header__title">
+                            {project?.title ?? 'Проект'}
+                        </Typography.Title>
+                        {project && (
+                            <>
+                                <Tag
+                                    className="project-header-chip"
+                                    color={project.open ? 'green' : 'default'}
+                                >
+                                    {project.open ? 'Открыт' : 'Закрыт'}
+                                </Tag>
+                                <Tag className="person-chip project-header-chip">
+                                    <MetadataIcon type="user" /> Руководитель:{' '}
+                                    {project.leadId === null
+                                        ? 'не назначен'
+                                        : (usersById.get(project.leadId) ??
+                                          `пользователь #${project.leadId}`)}
+                                </Tag>
+                            </>
+                        )}
+                    </Flex>
+                    <Typography.Text className="tasks-header__meta">
+                        {project?.description || 'Описание не указано.'}
+                    </Typography.Text>
                 </div>
 
                 <Space size={12} wrap>
-                    <Button type="primary" disabled={!project || !!projectError} onClick={openCreateModal}>
+                    <Button
+                        type="primary"
+                        disabled={!project || !!projectError}
+                        onClick={openCreateModal}
+                    >
                         Создать задачу
                     </Button>
-                    <Button onClick={() => { void refreshAll(); void getProject(projectId).then(p => { setProject(p); setProjectError(''); }).catch(() => setProjectError('Не удалось загрузить проект.')); }} disabled={isLoading}>
+                    <Button
+                        onClick={() => {
+                            void refreshAll();
+                            void getProject(projectId)
+                                .then((p) => {
+                                    setProject(p);
+                                    setProjectError('');
+                                })
+                                .catch(() => setProjectError('Не удалось загрузить проект.'));
+                        }}
+                        disabled={isLoading}
+                    >
                         Обновить
                     </Button>
                     <Button
@@ -176,7 +277,15 @@ function TasksPage() {
                         />
                     </Flex>
 
-                    <Select value={sortOrder} onChange={setSortOrder} options={[{ value: "current", label: "Сначала актуальные" }, { value: "deadline", label: "По сроку" }, { value: "title", label: "По названию" }]} />
+                    <Select
+                        value={sortOrder}
+                        onChange={setSortOrder}
+                        options={[
+                            { value: 'current', label: 'Сначала актуальные' },
+                            { value: 'deadline', label: 'По сроку' },
+                            { value: 'title', label: 'По названию' },
+                        ]}
+                    />
                     <Search
                         allowClear
                         value={searchQuery}
@@ -220,7 +329,10 @@ function TasksPage() {
                                     assigneeLabel={getAssigneeLabel(task.assigneeId, usersById)}
                                     onOpen={openTask}
                                     usersById={usersById}
-                                    onDelete={async () => { await deleteTask(projectId, task.id); removeTask(task.id); }}
+                                    onDelete={async () => {
+                                        await deleteTask(projectId, task.id);
+                                        removeTask(task.id);
+                                    }}
                                 />
                             </List.Item>
                         )}

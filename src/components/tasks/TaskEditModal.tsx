@@ -1,12 +1,12 @@
 import { Button, Form, Modal, Typography, type FormInstance } from 'antd';
 import type { Dayjs } from 'dayjs';
+import type { AttachmentFile } from './AttachmentField';
 import type { UserListItem } from '../../api/users';
 import { TaskFields, SubtaskFields } from './TaskFields';
 import type { TaskCreateFormValues } from './TaskCreateModal';
 
-
-
 export type TaskEditFormValues = {
+    attachmentFiles?: AttachmentFile[];
     subTasks?: TaskCreateFormValues[];
     title: string;
     description?: string;
@@ -47,7 +47,7 @@ function TaskEditModal({
             width={isSubtask ? 520 : 1000}
             closable={!isUpdating}
             maskClosable={!isUpdating}
-            title={isSubtask ? "Изменить подзадачу" : "Изменить задачу"}
+            title={isSubtask ? 'Изменить подзадачу' : 'Изменить задачу'}
             open={open}
             okText="Сохранить"
             cancelText="Отмена"
@@ -57,7 +57,12 @@ function TaskEditModal({
             destroyOnHidden
         >
             <Form form={form} layout="vertical" disabled={isUpdating}>
-                <div className={isSubtask ? undefined : "task-form-columns"}><section><TaskFields users={users} loading={isUsersLoading} /></section>{!isSubtask && <SubtaskFields users={users} loading={isUsersLoading} />}</div>
+                <div className={isSubtask ? undefined : 'task-form-columns'}>
+                    <section>
+                        <TaskFields users={users} loading={isUsersLoading} />
+                    </section>
+                    {!isSubtask && <SubtaskFields users={users} loading={isUsersLoading} />}
+                </div>
                 {usersError ? (
                     <div className="task-edit-modal__users-error">
                         <Typography.Text type="warning" className="task-create__hint">

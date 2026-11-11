@@ -1,11 +1,11 @@
 import { Form, Modal, Typography, type FormInstance } from 'antd';
 import type { Dayjs } from 'dayjs';
+import type { AttachmentFile } from './AttachmentField';
 import type { UserListItem } from '../../api/users';
 import { TaskFields, SubtaskFields } from './TaskFields';
 
-
-
 export type TaskCreateFormValues = {
+    attachmentFiles?: AttachmentFile[];
     open: boolean;
     subTasks?: TaskCreateFormValues[];
     id?: number;
@@ -54,9 +54,25 @@ function TaskCreateModal({
             onCancel={onCancel}
             destroyOnHidden
         >
-            <Form form={form} layout="vertical" initialValues={{ open: true, subTasks: [] }} disabled={isCreating || isPartiallyCreated}>
-                <div className="task-form-columns"><section><TaskFields users={users} loading={isUsersLoading} /></section><SubtaskFields users={users} loading={isUsersLoading} /></div>
-                {isPartiallyCreated && <Typography.Paragraph type="warning">Задача и подзадачи созданы. Не удалось сохранить выбранные статусы. Нажмите «Создать», чтобы повторить сохранение статусов, или закройте окно: задача останется в проекте.</Typography.Paragraph>}
+            <Form
+                form={form}
+                layout="vertical"
+                initialValues={{ open: true, subTasks: [] }}
+                disabled={isCreating || isPartiallyCreated}
+            >
+                <div className="task-form-columns">
+                    <section>
+                        <TaskFields users={users} loading={isUsersLoading} />
+                    </section>
+                    <SubtaskFields users={users} loading={isUsersLoading} />
+                </div>
+                {isPartiallyCreated && (
+                    <Typography.Paragraph type="warning">
+                        Задача и подзадачи созданы. Не удалось сохранить выбранные статусы. Нажмите
+                        «Создать», чтобы повторить сохранение статусов, или закройте окно: задача
+                        останется в проекте.
+                    </Typography.Paragraph>
+                )}
                 {usersError ? (
                     <Typography.Text type="warning" className="task-create__hint">
                         {usersError}

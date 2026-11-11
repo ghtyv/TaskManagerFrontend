@@ -311,3 +311,19 @@
 .task-status-chip.ant-tag { padding: 7px 13px; font-size: 14px; line-height: 22px; font-weight: 500; border-radius: 8px; margin: 0; }
 .task-details__meta .ant-tag { padding: 7px 12px; font-size: 14px; line-height: 22px; border-radius: 8px; margin: 0; }
 .task-meta__chips { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+
+.task-attachments__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.task-attachments__list > li {
+    padding: 12px 0;
+    border-bottom: 1px solid #edf0f3;
+}
+
+.task-attachments__name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}

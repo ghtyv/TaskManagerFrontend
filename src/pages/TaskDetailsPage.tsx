@@ -1,6 +1,20 @@
+import { toAttachmentPayload } from '../components/tasks/attachmentPayload';
+import TaskAttachments from '../components/tasks/TaskAttachments';
 import MetadataIcon from '../components/MetadataIcon';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Card, Flex, Form, Layout, Popconfirm, Space, Spin, Tag, Typography } from 'antd';
+import {
+    Alert,
+    Button,
+    Card,
+    Flex,
+    Form,
+    Layout,
+    Popconfirm,
+    Space,
+    Spin,
+    Tag,
+    Typography,
+} from 'antd';
 import dayjs from 'dayjs';
 import { useNavigate, useParams } from 'react-router';
 import { deleteTask, deleteSubtask, getTaskById, updateTask, type Task } from '../api/tasks';
@@ -51,7 +65,10 @@ function TaskDetailsPage() {
             setIsUsersLoading(true);
             setError('');
 
-            const [taskResult, usersResult] = await Promise.allSettled([getTaskById(projectId, id), getUsers()]);
+            const [taskResult, usersResult] = await Promise.allSettled([
+                getTaskById(projectId, id),
+                getUsers(),
+            ]);
 
             if (!isActive) {
                 return;
@@ -84,9 +101,10 @@ function TaskDetailsPage() {
     }, [id, projectId, form]);
 
     const isSubtask = task?.parentTaskId != null;
-    const backPath = task?.parentTaskId != null
-        ? `/projects/${projectId}/tasks/${task.parentTaskId}`
-        : `/projects/${projectId}`;
+    const backPath =
+        task?.parentTaskId != null
+            ? `/projects/${projectId}/tasks/${task.parentTaskId}`
+            : `/projects/${projectId}`;
 
     const handleDelete = async () => {
         if (!task || isDeleting || isUpdating) return;
@@ -119,10 +137,7 @@ function TaskDetailsPage() {
         }
     };
 
-    const usersById = useMemo(
-        () => new Map(users.map((user) => [user.id, user.email])),
-        [users],
-    );
+    const usersById = useMemo(() => new Map(users.map((user) => [user.id, user.email])), [users]);
 
     const openEditModal = () => {
         if (!task) {
@@ -130,8 +145,14 @@ function TaskDetailsPage() {
         }
 
         setUpdateError('');
+        form.resetFields();
         form.setFieldsValue({
-            subTasks: task.subTasks.map(item => ({ ...item, subTasks: undefined, description: item.description ?? undefined, deadline: item.deadline ? dayjs(item.deadline) : null })),
+            subTasks: task.subTasks.map((item) => ({
+                ...item,
+                subTasks: undefined,
+                description: item.description ?? undefined,
+                deadline: item.deadline ? dayjs(item.deadline) : null,
+            })),
             title: task.title,
             description: task.description ?? '',
             deadline: task.deadline ? dayjs(task.deadline) : null,
@@ -167,11 +188,19 @@ function TaskDetailsPage() {
 
             if (task.parentTaskId != null) {
                 const parent = await updateTask(projectId, task.parentTaskId, {
-                    subTasks: [{ id: task.id, title: values.title.trim(),
-                        description: values.description?.trim() || null, open: values.open,
-                        deadline: toDeadlinePayload(values.deadline), assigneeId: values.assigneeId ?? null }],
+                    subTasks: [
+                        {
+                            id: task.id,
+                            title: values.title.trim(),
+                            description: values.description?.trim() || null,
+                            open: values.open,
+                            deadline: toDeadlinePayload(values.deadline),
+                            assigneeId: values.assigneeId ?? null,
+                            newAttachments: toAttachmentPayload(values.attachmentFiles),
+                        },
+                    ],
                 });
-                const updatedSubtask = parent.subTasks.find(item => item.id === task.id);
+                const updatedSubtask = parent.subTasks.find((item) => item.id === task.id);
                 if (!updatedSubtask) throw new Error('Updated subtask is missing');
                 setTask(updatedSubtask);
                 setIsEditOpen(false);
@@ -180,8 +209,19 @@ function TaskDetailsPage() {
             }
 
             const updatedTask = await updateTask(projectId, task.id, {
-                subTasks: values.subTasks?.map(item => ({ ...(item.id ? { id: item.id } : {}), title: item.title.trim(), description: item.description?.trim() || null, open: item.open, deadline: toDeadlinePayload(item.deadline), assigneeId: item.assigneeId ?? null })),
-                removedSubtaskIds: task.subTasks.filter(item => !values.subTasks?.some(draft => draft.id === item.id)).map(item => item.id),
+                newAttachments: toAttachmentPayload(values.attachmentFiles),
+                subTasks: values.subTasks?.map((item) => ({
+                    ...(item.id ? { id: item.id } : {}),
+                    title: item.title.trim(),
+                    description: item.description?.trim() || null,
+                    open: item.open,
+                    deadline: toDeadlinePayload(item.deadline),
+                    assigneeId: item.assigneeId ?? null,
+                    newAttachments: toAttachmentPayload(item.attachmentFiles),
+                })),
+                removedSubtaskIds: task.subTasks
+                    .filter((item) => !values.subTasks?.some((draft) => draft.id === item.id))
+                    .map((item) => item.id),
                 title: values.title.trim(),
                 description: values.description?.trim() ? values.description.trim() : null,
                 open: values.open,
@@ -190,21 +230,35 @@ function TaskDetailsPage() {
             });
 
             setTask(updatedTask);
-            const newDrafts = values.subTasks?.filter(item => !item.id) ?? [];
-            const newTasks = updatedTask.subTasks.filter(item => !task.subTasks.some(old => old.id === item.id));
-            if (newDrafts.some(item => item.open === false)) {
+            const newDrafts = values.subTasks?.filter((item) => !item.id) ?? [];
+            const newTasks = updatedTask.subTasks.filter(
+                (item) => !task.subTasks.some((old) => old.id === item.id),
+            );
+            if (newDrafts.some((item) => item.open === false)) {
                 try {
-                    setTask(await updateTask(projectId, task.id, { subTasks: newTasks.map((item, i) => ({ id: item.id, open: newDrafts[i]?.open ?? true })) }));
+                    const taskWithStatuses = await updateTask(projectId, task.id, {
+                        subTasks: newTasks.map((item, index) => ({
+                            id: item.id,
+                            open: newDrafts[index]?.open ?? true,
+                        })),
+                    });
+                    setTask(taskWithStatuses);
                 } catch {
                     setIsEditOpen(false);
-                    setUsersError('Изменения сохранены, но статусы новых подзадач остались открытыми. Откройте редактирование и повторите изменение статусов.');
+                    setUsersError(
+                        'Изменения сохранены, но статусы новых подзадач остались открытыми. Откройте редактирование и повторите изменение статусов.',
+                    );
                     return;
                 }
             }
             setIsEditOpen(false);
             form.resetFields();
         } catch (updateTaskError: unknown) {
-            if (typeof updateTaskError === 'object' && updateTaskError !== null && 'errorFields' in updateTaskError) {
+            if (
+                typeof updateTaskError === 'object' &&
+                updateTaskError !== null &&
+                'errorFields' in updateTaskError
+            ) {
                 return;
             }
 
@@ -226,7 +280,10 @@ function TaskDetailsPage() {
                         <Card className="tasks-state__panel">
                             <Space direction="vertical" size={16}>
                                 <Typography.Text>{error}</Typography.Text>
-                                <Button type="primary" onClick={() => navigate(`/projects/${projectId}`)}>
+                                <Button
+                                    type="primary"
+                                    onClick={() => navigate(`/projects/${projectId}`)}
+                                >
                                     Вернуться к задачам
                                 </Button>
                             </Space>
@@ -245,9 +302,18 @@ function TaskDetailsPage() {
                         <Button onClick={() => navigate(backPath)}>
                             {isSubtask ? '← К родительской задаче' : '← К задачам проекта'}
                         </Button>
-                        <Button type="link" onClick={() => navigate('/projects')}>Все проекты</Button>
+                        <Button type="link" onClick={() => navigate('/projects')}>
+                            Все проекты
+                        </Button>
                     </Space>
-                    {actionError && <Alert type="error" title={actionError} closable onClose={() => setActionError('')} />}
+                    {actionError && (
+                        <Alert
+                            type="error"
+                            title={actionError}
+                            closable
+                            onClose={() => setActionError('')}
+                        />
+                    )}
 
                     {isLoading ? (
                         <div className="tasks-state">
@@ -257,7 +323,10 @@ function TaskDetailsPage() {
                         <Card className="tasks-state__panel">
                             <Space direction="vertical" size={16}>
                                 <Typography.Text>{error}</Typography.Text>
-                                <Button type="primary" onClick={() => navigate(`/projects/${projectId}`)}>
+                                <Button
+                                    type="primary"
+                                    onClick={() => navigate(`/projects/${projectId}`)}
+                                >
                                     Вернуться к задачам
                                 </Button>
                             </Space>
@@ -265,26 +334,67 @@ function TaskDetailsPage() {
                     ) : task ? (
                         <Card className="task-details__card">
                             <Space direction="vertical" size={20} className="task-details__content">
-                                <Flex justify="space-between" gap={16} wrap className="task-details__header">
-                                    <Flex align="center" gap={12} wrap className="task-details__header-main">
+                                <Flex
+                                    justify="space-between"
+                                    gap={16}
+                                    wrap
+                                    className="task-details__header"
+                                >
+                                    <Flex
+                                        align="center"
+                                        gap={12}
+                                        wrap
+                                        className="task-details__header-main"
+                                    >
                                         <Typography.Title level={2} className="task-details__title">
                                             {task.title}
                                         </Typography.Title>
-                                        <Tag className={`task-status-chip tone-${task.open ? 'gray' : 'green'}`}>{getTaskState(task.open)}</Tag>
+                                        <Tag
+                                            className={`task-status-chip tone-${task.open ? 'gray' : 'green'}`}
+                                        >
+                                            {getTaskState(task.open)}
+                                        </Tag>
                                     </Flex>
 
                                     <Space wrap>
-                                        <Button type="primary" disabled={isDeleting} onClick={openEditModal}>
+                                        <Button
+                                            type="primary"
+                                            disabled={isDeleting}
+                                            onClick={openEditModal}
+                                        >
                                             Изменить
                                         </Button>
                                         <Popconfirm
-                                            title={isSubtask ? 'Удалить подзадачу?' : 'Удалить задачу?'}
-                                            description={isSubtask ? 'Подзадача больше не будет доступна.' : 'Задача и её подзадачи больше не будут доступны.'}
-                                            okText="Удалить" cancelText="Отмена" okButtonProps={{ danger: true, loading: isDeleting }}
+                                            title={
+                                                isSubtask ? 'Удалить подзадачу?' : 'Удалить задачу?'
+                                            }
+                                            description={
+                                                isSubtask
+                                                    ? 'Подзадача больше не будет доступна.'
+                                                    : 'Задача и её подзадачи больше не будут доступны.'
+                                            }
+                                            okText="Удалить"
+                                            cancelText="Отмена"
+                                            okButtonProps={{ danger: true, loading: isDeleting }}
                                             disabled={isDeleting || isUpdating}
                                             onConfirm={handleDelete}
                                         >
-                                            <Button danger icon={<MetadataIcon type="delete" />} aria-label={isSubtask ? "Удалить подзадачу" : "Удалить задачу"} title={isSubtask ? "Удалить подзадачу" : "Удалить задачу"} loading={isDeleting} disabled={isUpdating} />
+                                            <Button
+                                                danger
+                                                icon={<MetadataIcon type="delete" />}
+                                                aria-label={
+                                                    isSubtask
+                                                        ? 'Удалить подзадачу'
+                                                        : 'Удалить задачу'
+                                                }
+                                                title={
+                                                    isSubtask
+                                                        ? 'Удалить подзадачу'
+                                                        : 'Удалить задачу'
+                                                }
+                                                loading={isDeleting}
+                                                disabled={isUpdating}
+                                            />
                                         </Popconfirm>
                                     </Space>
                                 </Flex>
@@ -303,12 +413,67 @@ function TaskDetailsPage() {
                                     id={task.id}
                                     deadline={task.deadline}
                                     stateLabel={getTaskState(task.open)}
-                                    assigneeLabel={getAssigneeLabel(task.assigneeId, usersById, isUsersLoading)}
+                                    assigneeLabel={getAssigneeLabel(
+                                        task.assigneeId,
+                                        usersById,
+                                        isUsersLoading,
+                                    )}
                                 />
 
-                                {!!task.subTasks.length && <section><Typography.Title level={4}>Подзадачи</Typography.Title><div className="projects-grid">{task.subTasks.map(item => <TaskListCard key={item.id} task={item} assigneeLabel={getAssigneeLabel(item.assigneeId, usersById)} usersById={usersById} onDelete={async () => { await deleteSubtask(projectId, task.id, item.id); setTask(current => current ? { ...current, subTasks: current.subTasks.filter(subtask => subtask.id !== item.id) } : current); }} onOpen={subtaskId => navigate(`/projects/${projectId}/tasks/${subtaskId}`)} />)}</div></section>}
+                                <TaskAttachments
+                                    key={`${projectId}/${task.id}`}
+                                    projectId={projectId}
+                                    task={task}
+                                />
+
+                                {!!task.subTasks.length && (
+                                    <section>
+                                        <Typography.Title level={4}>Подзадачи</Typography.Title>
+                                        <div className="projects-grid">
+                                            {task.subTasks.map((item) => (
+                                                <TaskListCard
+                                                    key={item.id}
+                                                    task={item}
+                                                    assigneeLabel={getAssigneeLabel(
+                                                        item.assigneeId,
+                                                        usersById,
+                                                    )}
+                                                    usersById={usersById}
+                                                    onDelete={async () => {
+                                                        await deleteSubtask(
+                                                            projectId,
+                                                            task.id,
+                                                            item.id,
+                                                        );
+                                                        setTask((current) =>
+                                                            current
+                                                                ? {
+                                                                      ...current,
+                                                                      subTasks:
+                                                                          current.subTasks.filter(
+                                                                              (subtask) =>
+                                                                                  subtask.id !==
+                                                                                  item.id,
+                                                                          ),
+                                                                  }
+                                                                : current,
+                                                        );
+                                                    }}
+                                                    onOpen={(subtaskId) =>
+                                                        navigate(
+                                                            `/projects/${projectId}/tasks/${subtaskId}`,
+                                                        )
+                                                    }
+                                                />
+                                            ))}
+                                        </div>
+                                    </section>
+                                )}
                                 {usersError ? (
-                                    <Typography.Text type="warning" className="task-details__warning">
+                                    <Typography.Text
+                                        type="warning"
+                                        className="task-details__warning"
+                                    >
                                         {usersError}
                                     </Typography.Text>
                                 ) : null}

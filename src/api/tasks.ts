@@ -1,4 +1,5 @@
 import apiClient from './client';
+import type { AttachmentUpload } from './attachments';
 
 export type Task = {
     id: number;
@@ -12,6 +13,7 @@ export type Task = {
 };
 
 export type CreateTaskPayload = {
+    newAttachments?: AttachmentUpload[];
     title: string;
     description?: string;
     deadline?: string | null;
@@ -20,12 +22,13 @@ export type CreateTaskPayload = {
 };
 
 export type UpdateTaskPayload = {
+    newAttachments?: AttachmentUpload[];
     title?: string;
     description?: string | null;
     open?: boolean;
     deadline?: string | null;
     assigneeId?: number | null;
-    subTasks?: (Omit<UpdateTaskPayload, "subTasks" | "removedSubtaskIds"> & { id?: number })[];
+    subTasks?: (Omit<UpdateTaskPayload, 'subTasks' | 'removedSubtaskIds'> & { id?: number })[];
     removedSubtaskIds?: number[];
 };
 
