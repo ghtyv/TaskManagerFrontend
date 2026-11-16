@@ -18,6 +18,15 @@ export async function getTaskAttachments(projectId: string, taskId: number) {
     return response.data;
 }
 
+export async function deleteAttachmentById(
+    projectId: string,
+    attachmentId: number,
+) {
+    await apiClient.delete(
+        `/projects/${projectId}/attachments/${attachmentId}/delete`,
+    );
+}
+
 export async function prepareAttachmentUpload(projectId: string, file: File) {
     const payload = new FormData();
     payload.append('file', file);

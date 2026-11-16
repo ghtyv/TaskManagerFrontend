@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Alert, Button, Flex, Space, Spin, Typography } from 'antd';
-import { downloadAttachment, getTaskAttachments, type Attachment } from '../../api/attachments';
+import { Alert, Button, Flex, Popconfirm, Space, Spin, Typography } from 'antd';
+import {
+    deleteAttachmentById,
+    downloadAttachment,
+    getTaskAttachments,
+    type Attachment,
+} from '../../api/attachments';
 import type { Task } from '../../api/tasks';
 
 function formatSize(bytes: number) {
@@ -19,8 +24,11 @@ function TaskAttachments({ projectId, task }: TaskAttachmentsProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [downloadError, setDownloadError] = useState('');
+    const [deleteError, setDeleteError] = useState('');
     const [downloadingId, setDownloadingId] = useState<number | null>(null);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
     const [retry, setRetry] = useState(0);
+    const isBusy = downloadingId !== null || deletingId !== null;
 
     useEffect(() => {
         let active = true;
@@ -43,6 +51,8 @@ function TaskAttachments({ projectId, task }: TaskAttachmentsProps) {
     }, [projectId, task, retry]);
 
     const handleDownload = async (attachment: Attachment) => {
+        if (isBusy) return;
+
         setDownloadingId(attachment.id);
         setDownloadError('');
         try {
@@ -54,6 +64,25 @@ function TaskAttachments({ projectId, task }: TaskAttachmentsProps) {
         }
     };
 
+    const handleDelete = async (attachment: Attachment) => {
+        if (isBusy) return;
+
+        setDeletingId(attachment.id);
+        setDeleteError('');
+        try {
+            await deleteAttachmentById(projectId, attachment.id);
+            setAttachments((current) =>
+                current.filter((file) => file.id !== attachment.id),
+            );
+        } catch {
+            setDeleteError(
+                `Не удалось удалить файл «${attachment.name}». Попробуйте снова.`,
+            );
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
     return (
         <section className="task-attachments">
             <Typography.Title level={4}>Файлы задачи</Typography.Title>
@@ -61,6 +90,7 @@ function TaskAttachments({ projectId, task }: TaskAttachmentsProps) {
                 Прикрепить файлы к задаче можно в окне редактирования.
             </Typography.Paragraph>
             {downloadError && <Alert type="error" title={downloadError} />}
+            {deleteError && <Alert type="error" title={deleteError} />}
             {isLoading ? (
                 <Spin />
             ) : error ? (
@@ -87,14 +117,39 @@ function TaskAttachments({ projectId, task }: TaskAttachmentsProps) {
                                         {formatSize(attachment.size)}
                                     </Typography.Text>
                                 </div>
-                                <Button
-                                    loading={downloadingId === attachment.id}
-                                    disabled={downloadingId !== null}
-                                    onClick={() => void handleDownload(attachment)}
-                                    aria-label={`Скачать ${attachment.name}`}
-                                >
-                                    Скачать
-                                </Button>
+                                <Space wrap>
+                                    <Button
+                                        loading={downloadingId === attachment.id}
+                                        disabled={isBusy}
+                                        onClick={() => void handleDownload(attachment)}
+                                        aria-label={`Скачать ${attachment.name}`}
+                                    >
+                                        Скачать
+                                    </Button>
+                                    <Popconfirm
+                                        title="Удалить файл?"
+                                        description={
+                                            `Файл «${attachment.name}» будет удалён безвозвратно.`
+                                        }
+                                        okText="Удалить"
+                                        cancelText="Отмена"
+                                        okButtonProps={{
+                                            danger: true,
+                                            loading: deletingId === attachment.id,
+                                        }}
+                                        disabled={isBusy}
+                                        onConfirm={() => handleDelete(attachment)}
+                                    >
+                                        <Button
+                                            danger
+                                            loading={deletingId === attachment.id}
+                                            disabled={isBusy}
+                                            aria-label={`Удалить ${attachment.name}`}
+                                        >
+                                            Удалить
+                                        </Button>
+                                    </Popconfirm>
+                                </Space>
                             </Flex>
                         </li>
                     ))}
